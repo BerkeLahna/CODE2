@@ -1,4 +1,5 @@
 import pygame
+import pygame_widgets
 
 # Player class
 class Player:
