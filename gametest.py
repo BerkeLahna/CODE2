@@ -1,5 +1,5 @@
 import pygame
-import pygame_widgets
+import importablemenu
 
 # Player class
 class Player:
@@ -96,7 +96,6 @@ def switch_view(state):
         prices = [CONVERTER_PRICE, GENERATOR_PRICE, OFFICE_PRICE]
         for i in range(len(labels)):
             label_text = font.render(f'{labels[i]} (${prices[i]})', True, (0, 0, 0))
-            print(label_text)
             window.blit(label_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, i * SIDEBAR_ITEM_HEIGHT + 10))
     elif(state == "Upgrade"):
         # Draw the "Upgrade" state sidebar
@@ -108,7 +107,20 @@ def switch_view(state):
         
         
     
+def display_sidebar(tier, page):
+    labels = ["Converter", "Generator", "Office"]
+    prices = TIER_PRICES.get(tier, [])  # Get prices for the current tier and page
 
+    for i in range(len(labels)):
+        label_text = font.render(f'{"Tier ",page," "+labels[i]} (${prices[page-1][i]})', True, (0, 0, 0))
+        window.blit(label_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, i * SIDEBAR_ITEM_HEIGHT + 10))
+       
+    convert_button = font.render(f'Convert Energy To Money', True, (0, 0, 0), (125, 255, 125)) 
+    window.blit(convert_button, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, WINDOW_HEIGHT - 160))
+
+    # Display page switch buttons
+    button_text = font.render(f'Page {page}', True, (0, 0, 0), (200, 200, 200))
+    window.blit(button_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, WINDOW_HEIGHT - 120))
 
 # Tile constants
 TILE_SIZE = 50
@@ -168,6 +180,12 @@ grid = [[TILE_EMPTY for _ in range(NUM_TILES_Y)] for _ in range(NUM_TILES_X)]
 
 
 
+# Sample prices for different tiers (you should replace these with your actual prices)
+TIER_PRICES = {
+    1: [[10, 20, 30], [40, 50, 60]],  # Prices for tier 1 for pages 1 and 2
+    2: [[50, 60, 70], [80, 90, 100]]   # Prices for tier 2 for pages 1 and 2 (example)
+}
+
 # Define building upgrades
 upgrades = {
     "Converter": ("Improved Conversion", 100),
@@ -185,6 +203,12 @@ buy_button = font.render("Buy", True, (0, 0, 0))
 buy_button_rect = buy_button.get_rect(center=(WINDOW_WIDTH + 100, WINDOW_HEIGHT + 250))
 upgrade_button = font.render("Upgrade", True, (0, 0, 0))
 upgrade_button_rect = upgrade_button.get_rect(center=(WINDOW_WIDTH - 250, 25))
+
+
+
+current_tier = 1
+current_page = 1
+display_sidebar(current_tier, current_page)
 
 
 
@@ -305,25 +329,30 @@ while running:
     window.fill(GRAY)
     
 
-    # Draw tiles and objects
+    converter_image = pygame.transform.scale(pygame.image.load('converter.png'), (50, 50))
+    generator_image = pygame.transform.scale(pygame.image.load('generator1.png'), (50, 50))
+    office_image = pygame.transform.scale(pygame.image.load('office.png'), (50, 50))
+   # Draw tiles and objects
     for i in range(NUM_TILES_X):
         for j in range(NUM_TILES_Y):
             rect = pygame.Rect(i * TILE_SIZE, j * TILE_SIZE, TILE_SIZE, TILE_SIZE)
             if grid[i][j] == TILE_CONVERTER:
-                pygame.draw.rect(window, RED, rect)
+                window.blit(converter_image, rect)
             elif grid[i][j] == TILE_GENERATOR:
-                pygame.draw.rect(window, YELLOW, rect)
+                window.blit(generator_image, rect)
             elif grid[i][j] == TILE_OFFICE:
-                pygame.draw.rect(window, GREEN, rect)
+                window.blit(office_image, rect)
             else:
                 pygame.draw.rect(window, WHITE, rect, 1)
 
     # Draw sidebar and objects to be placed
     pygame.draw.rect(window, WHITE, (WINDOW_WIDTH - SIDEBAR_WIDTH, 0, SIDEBAR_WIDTH, WINDOW_HEIGHT))
 
+
     # Sidebar labels and prices
     labels = ["Converter", "Generator", "Office"]
     prices = [CONVERTER_PRICE, GENERATOR_PRICE, OFFICE_PRICE]
+    images = [converter_image, generator_image, office_image]
     for i in range(len(labels)):
         label_text = font.render(f'{labels[i]} (${prices[i]})', True, (0, 0, 0))
         window.blit(label_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, i * SIDEBAR_ITEM_HEIGHT + 10))
