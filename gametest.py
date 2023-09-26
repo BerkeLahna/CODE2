@@ -5,7 +5,7 @@ import importablemenu
 class Player:
     def __init__(self):
         self.energy = 0
-        self.money = 100000
+        self.money = 10000
 
     def buy_energy_generator(self, cost):
         if self.money >= cost:
@@ -62,30 +62,43 @@ class Player:
 
 # EnergyGenerator class
 class EnergyGenerator:
-    def __init__(self, tier,cost, heat_per_tick):
-        self.cost = cost*tier*(4 if tier != 1 else 1)
-        self.heat_per_tick = heat_per_tick*(1 if tier == 1 else 4)
+    def __init__(self, tier):
+        self.cost = 300*tier*(1 if tier == 1 else 4)
+        self.heat_per_tick = 5/60*tier*(1 if tier == 1 else 4)
 
     def generate_heat(self):
         return self.heat_per_tick
+    
+    def upgrade(self):
+        if self.tier < 8:
+            self.tier += 1
 
 class EnergyConverter:
-    def __init__(self,tier, cost, energy_per_heat):
-        self.cost = cost*tier*(1 if tier == 1 else 4)
-        self.energy_per_heat = energy_per_heat*(1 if tier == 1 else 4)
+    def __init__(self,tier):
+        self.cost = 200*tier*(1 if tier == 1 else 4)
+        self.energy_per_heat = 2 * tier*(1 if tier == 1 else 4)
 
     def convert_heat(self, heat):
         return heat * self.energy_per_heat
+    
+    def upgrade(self):
+        if self.tier < 8:
+            self.tier += 1
+    
 
 class Office:
-    def __init__(self,tier,cost):
-        self.energy_sell_rate = 5*tier/FPS  # Energy selling rate for the office (per second)
-        self.cost = cost*tier*(4 if tier != 1 else 1)
+    def __init__(self,tier):
+        self.energy_sell_rate = 5*tier*(1 if tier == 1 else 4)  # Energy selling rate for the office (per second)
+        self.cost = 500*tier*(4 if tier != 1 else 1)
+        self.tier = tier
     def sell_energy(self, player):
         # Sell energy at the defined rate
         if player.energy >= self.energy_sell_rate:
             player.energy -= self.energy_sell_rate 
             player.money += self.energy_sell_rate  # Assuming 1 energy = 10 money
+    def upgrade(self):
+        if self.tier < 8:
+            self.tier += 1
             
 class Button():
     def __init__(self, x, y, width, height, text='', command=None):
@@ -105,43 +118,54 @@ class Button():
         if event.type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(event.pos):
             if self.command:
                 self.command()
+                
+    def button_update(self, text=''):
+        self.text = text
             
 def switch_view(state, tier):
+    labels = ["Converter", "Generator", "Office"]
     if state == "Buy":
+        # testbutton.button_update("Buy Converter")
         items = [
-            EnergyConverter(tier,CONVERTER_PRICE, ENERGY_RATE_CONVERTER*tier),
-            EnergyGenerator(tier, GENERATOR_PRICE, ENERGY_RATE_GENERATOR*tier),
-            Office(tier, OFFICE_PRICE)
-        ]
-    elif state == "Upgrade":
-        items = [
-            EnergyConverter(tier,CONVERTER_PRICE, ENERGY_RATE_CONVERTER*tier),
-            EnergyGenerator(tier, GENERATOR_PRICE, ENERGY_RATE_GENERATOR*tier),
-            Office(tier, OFFICE_PRICE)
+            EnergyConverter(tier),
+            EnergyGenerator(tier),
+            Office(tier)
         ]
 
-    labels = ["Converter", "Generator", "Office"]
-    for i, item in enumerate(items):
-        # price = item.cost * (2 if state == "Upgrade" else 1)
-        price = item.cost
-        label_text = font.render(f'{labels[i],tier} (${price})', True, (0, 0, 0))
-        window.blit(label_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, i * SIDEBAR_ITEM_HEIGHT + 10))
+        for i, item in enumerate(items):
+            # price = item.cost * (2 if state == "Upgrade" else 1)
+            price = item.cost
+            label_text = font.render(f'Tier {tier} {labels[i]} (${price})', True, (0, 0, 0))
+            window.blit(label_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, i * SIDEBAR_ITEM_HEIGHT + 10))
         
+    elif state == "Upgrade":
+
+        #create a button for each upgrade
+        # testbutton.button_update("Upgrade Converter")
+        label_text = font.render(f'Upgrade Converter{CONVERTER_UPGRADE}(${1000*CONVERTER_UPGRADE*4})\n Upgrade heat generation by %50', True, (0, 0, 0))
+        window.blit(label_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10,  SIDEBAR_ITEM_HEIGHT -40 ))
+        label_text = font.render(f'Upgrade Generator{GENERATOR_UPGRADE}(${1000*GENERATOR_UPGRADE*4})\n Upgrade heat generation by %50', True, (0, 0, 0))
+        window.blit(label_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, 2 * SIDEBAR_ITEM_HEIGHT -40))
+        label_text = font.render(f'Upgrade Office{OFFICE_UPGRADE}(${1000*OFFICE_UPGRADE*4}) Upgrade heat generation by %50', True, (0, 0, 0))
+        window.blit(label_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, 3 * SIDEBAR_ITEM_HEIGHT -40))
+    
+
     
 def display_sidebar(tier, page):
-    labels = ["Converter", "Generator", "Office"]
-    prices = TIER_PRICES.get(tier, [])  # Get prices for the current tier and page
+    print("display_sidebar")
+    # labels = ["Converter", "Generator", "Office"]
+    # prices = TIER_PRICES.get(tier, [])  # Get prices for the current tier and page
 
-    for i in range(len(labels)):
-        label_text = font.render(f'{"Tier ",page," "+labels[i]} (${prices[page-1][i]})', True, (0, 0, 0))
-        window.blit(label_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, i * SIDEBAR_ITEM_HEIGHT + 10))
+    # for i in range(len(labels)):
+    #     label_text = font.render(f'Tier {page} {labels[i]} (${prices[page-1][i]})', True, (0, 0, 0))
+    #     window.blit(label_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, i * SIDEBAR_ITEM_HEIGHT + 10))
        
-    convert_button = font.render(f'Convert Energy To Money', True, (0, 0, 0), (125, 255, 125)) 
-    window.blit(convert_button, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, WINDOW_HEIGHT - 160))
+    # convert_button = font.render(f'Convert Energy To Money', True, (0, 0, 0), (125, 255, 125)) 
+    # window.blit(convert_button, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, WINDOW_HEIGHT - 160))
 
-    # Display page switch buttons
-    button_text = font.render(f'Page {page}', True, (0, 0, 0), (200, 200, 200))
-    window.blit(button_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, WINDOW_HEIGHT - 120))
+    # # Display page switch buttons
+    # button_text = font.render(f'Page {page}', True, (0, 0, 0), (200, 200, 200))
+    # window.blit(button_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, WINDOW_HEIGHT - 120))
 
 # Tile constants
 TILE_SIZE = 50
@@ -166,6 +190,12 @@ TILE_CONVERTER = 1
 TILE_GENERATOR = 2
 TILE_OFFICE = 3
 
+#Upgrade Stats
+CONVERTER_UPGRADE = 1
+GENERATOR_UPGRADE = 1
+OFFICE_UPGRADE = 1
+
+
 # Object prices
 CONVERTER_PRICE = 200
 GENERATOR_PRICE = 300
@@ -180,7 +210,8 @@ pygame.init()
 
 # Initialize the window
 WINDOW_WIDTH = NUM_TILES_X * TILE_SIZE + SIDEBAR_WIDTH
-WINDOW_HEIGHT = NUM_TILES_Y * TILE_SIZE + 50
+# WINDOW_HEIGHT = NUM_TILES_Y * TILE_SIZE +50
+WINDOW_HEIGHT = NUM_TILES_Y * TILE_SIZE 
 window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption('Energy Tycoon')
 
@@ -198,8 +229,9 @@ font = pygame.font.Font(None, 24)
 
 # Initialize game objects
 player = Player()
-energy_generator = EnergyGenerator(1,cost=100, heat_per_tick=20/FPS)  # Slower energy generation
-energy_converter = EnergyConverter(1,cost=150, energy_per_heat=50/FPS)  # More efficient conversion
+energy_generator = EnergyGenerator(1)  # Slower energy generation
+energy_converter = EnergyConverter(1)  # More efficient conversion
+office = Office(1)
 heat_grid = [[0 for _ in range(NUM_TILES_Y)] for _ in range(NUM_TILES_X)]  # Heat grid for generators
 
 # Initialize the grid with empty tiles
@@ -229,8 +261,7 @@ selected_building = None  # Selected building type (None, CONVERTER, GENERATOR, 
 
 
 current_tier = 1
-current_page = 1
-display_sidebar(current_tier, current_page)
+
 
 
 
@@ -239,16 +270,14 @@ buy_button1 = Button(815, 295, 100, 30, 'Buy', lambda: print('Button clicked'))
 upgrade_button1 = Button(1100, 295, 100, 30, 'Upgrade', lambda: print('Button clicked'))
 forward_button = Button(1100, 255, 100, 30, '>>', lambda: print('Button clicked'))
 previous_button = Button(815, 255, 100, 30, '<<', lambda: print('Button clicked'))
-
+testbutton = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, SIDEBAR_ITEM_HEIGHT , 100, 30, 'Buy')
 
 
 state = "Buy"
 
 switch_view("Buy",current_tier)
-office = Office(1,OFFICE_PRICE)  # Initialize the office
 
 while running:
-
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -256,12 +285,14 @@ while running:
             mouse_pos = pygame.mouse.get_pos()
             if event.button == 1:  # Left click
                 mouse_x, mouse_y = pygame.mouse.get_pos()
-                if previous_button.rect.collidepoint(mouse_pos):
+                # if testbutton.rect.collidepoint(mouse_pos):
+                #     print("test")
+                if previous_button.rect.collidepoint(mouse_pos) and current_tier > 1:
                     current_tier -=1
                     
-                if forward_button.rect.collidepoint(mouse_pos):
+                if forward_button.rect.collidepoint(mouse_pos) and current_tier < 8:
                     current_tier +=1
-                    
+
                 if buy_button1.rect.collidepoint(mouse_pos):
                     state = "Buy"
                     print("Buy button clicked")
@@ -270,8 +301,9 @@ while running:
                     print("upgrade button clicked")
 # Check if the mouse is within the "Buy" button area
                 
-                if WINDOW_WIDTH - SIDEBAR_WIDTH <= mouse_pos[0] < WINDOW_WIDTH:
+                if WINDOW_WIDTH - SIDEBAR_WIDTH <= mouse_pos[0] < WINDOW_WIDTH and state == "Buy":
                     selected_building = (mouse_pos[1] // SIDEBAR_ITEM_HEIGHT) + 1
+                    building_tier = current_tier
                 if WINDOW_WIDTH - SIDEBAR_WIDTH + 10 <= mouse_pos[0] < WINDOW_WIDTH - SIDEBAR_WIDTH + 290 and WINDOW_HEIGHT - 160 <= mouse_pos[1] < WINDOW_HEIGHT - 110:
                         # Convert energy to money
                         player.sell_energy(player.energy)  # Sell all available energy
@@ -283,11 +315,11 @@ while running:
                     grid_y = mouse_pos[1] // TILE_SIZE
                     if 0 <= grid_x < NUM_TILES_X and 0 <= grid_y < NUM_TILES_Y:
                         if selected_building == 1 and player.buy_energy_generator(CONVERTER_PRICE*current_tier):
-                            grid[grid_x][grid_y] = TILE_CONVERTER
+                            grid[grid_x][grid_y] = EnergyConverter(current_tier)
                         elif selected_building == 2 and player.buy_energy_generator(GENERATOR_PRICE*current_tier):
-                            grid[grid_x][grid_y] = TILE_GENERATOR
+                            grid[grid_x][grid_y] = EnergyGenerator(current_tier)
                         elif selected_building == 3 and player.buy_energy_generator(OFFICE_PRICE*current_tier):
-                            grid[grid_x][grid_y] = TILE_OFFICE
+                            grid[grid_x][grid_y] = Office(current_tier)
             elif event.button == 3:  # Right click
                 # Sell selected building on the grid
                 grid_x = mouse_pos[0] // TILE_SIZE
@@ -346,7 +378,7 @@ while running:
     total_energy_sold = 0
     for i in range(NUM_TILES_X):
         for j in range(NUM_TILES_Y):
-            if grid[i][j] == TILE_OFFICE:
+            if isinstance(grid[i][j], Office):
                 office.sell_energy(player)
                 total_energy_sold += office.energy_sell_rate
 
@@ -354,21 +386,24 @@ while running:
     
     
 
-    converter_image = pygame.transform.scale(pygame.image.load('converter.png'), (50, 50))
-    generator_image = pygame.transform.scale(pygame.image.load('generator1.png'), (50, 50))
-    office_image = pygame.transform.scale(pygame.image.load('office.png'), (50, 50))
+    converter_image = pygame.transform.scale(pygame.image.load('solarpanelfull.png'), (50, 50))
+    generator_image = pygame.transform.scale(pygame.image.load('generatorfull.png'), (50, 50))
+    office_image = pygame.transform.scale(pygame.image.load('officefull.png'), (50, 50))
+    tile_image = pygame.transform.scale(pygame.image.load('tile2.jpg'), (50, 50))
+    
    # Draw tiles and objects
     for i in range(NUM_TILES_X):
         for j in range(NUM_TILES_Y):
             rect = pygame.Rect(i * TILE_SIZE, j * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-            if grid[i][j] == TILE_CONVERTER:
+            if isinstance(grid[i][j], EnergyConverter):
                 window.blit(converter_image, rect)
-            elif grid[i][j] == TILE_GENERATOR:
+            elif isinstance(grid[i][j], EnergyGenerator):
                 window.blit(generator_image, rect)
-            elif grid[i][j] == TILE_OFFICE:
+            elif isinstance(grid[i][j], Office):
                 window.blit(office_image, rect)
             else:
-                pygame.draw.rect(window, WHITE, rect, 1)
+                window.blit(tile_image, rect)
+                # pygame.draw.rect(window, WHITE, rect, 1)
 
 
         
@@ -386,13 +421,15 @@ while running:
 
 
     # Blit the bottom bar onto the main window
-    window.blit(bottom_bar, (0, WINDOW_HEIGHT - 50))
+    # window.blit(bottom_bar, (0, WINDOW_HEIGHT - 50))
 
     #DRAW BUTTONS
     buy_button1.draw(window)
     upgrade_button1.draw(window)
     forward_button.draw(window)
-    previous_button.draw(window)    
+    previous_button.draw(window) 
+    # testbutton.draw(window)
+  
 
     # Check if mouse is hovering over a placed building
     mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -402,16 +439,19 @@ while running:
     grid_x = mouse_pos[0] // TILE_SIZE
     grid_y = mouse_pos[1] // TILE_SIZE
     if 0 <= grid_x < NUM_TILES_X and 0 <= grid_y < NUM_TILES_Y:
-        if grid[grid_x][grid_y] == TILE_CONVERTER:
-            info_text = font.render(f'Energy per heat: {energy_converter.energy_per_heat}', True, (0, 0, 0))
+        if isinstance(grid[grid_x][grid_y], EnergyConverter):
+            info_text = font.render(f'Energy per heat: {grid[grid_x][grid_y].energy_per_heat}', True, (0, 0, 0))
             window.blit(info_text, (mouse_pos[0] + 10, mouse_pos[1] + 10))
-        elif grid[grid_x][grid_y] == TILE_GENERATOR:
-            info_text = font.render(f'Heat per tick: {energy_generator.heat_per_tick}', True, (0, 0, 0))
+        elif isinstance(grid[grid_x][grid_y], EnergyGenerator):
+            info_text = font.render(f'Heat per tick: {grid[grid_x][grid_y].heat_per_tick}', True, (0, 0, 0))
             window.blit(info_text, (mouse_pos[0] + 10, mouse_pos[1] + 10))
-        elif grid[grid_x][grid_y] == TILE_OFFICE:
-            info_text = font.render(f'Energy sell rate: {office.energy_sell_rate * 60:.2f} per second', True, (0, 0, 0))
-            window.blit(info_text, (mouse_pos[0] + 10, mouse_pos[1] + 10))
-
+        elif isinstance(grid[grid_x][grid_y], Office):
+            info_text = font.render(f'Energy sell rate: {grid[grid_x][grid_y].energy_sell_rate * 60:.2f} per second tier {grid[grid_x][grid_y].tier}', True, (255, 255, 255))
+            info_bg = pygame.Surface((info_text.get_width()+20, info_text.get_height()+20))
+            info_bg.fill((0, 0, 0))
+            info_bg.blit(info_text, (10, 10))
+            info_bg.set_alpha(150)
+            window.blit(info_bg, (mouse_pos[0] + 10, mouse_pos[1] + 10))
     
     
 
