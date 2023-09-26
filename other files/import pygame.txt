@@ -1,0 +1,57 @@
+import pygame
+
+# Constants for sidebar layout
+SIDEBAR_WIDTH = 200
+SIDEBAR_ITEM_HEIGHT = 30
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 600
+
+# Sample prices for different tiers (you should replace these with your actual prices)
+TIER_PRICES = {
+    1: [10, 20, 30],  # Prices for tier 1
+    2: [50, 60, 70]   # Prices for tier 2 (example)
+}
+
+# Initialize pygame
+pygame.init()
+
+# Set up the window and font
+window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+font = pygame.font.Font(None, 24)
+
+def display_sidebar(tier):
+    labels = ["Converter", "Generator", "Office"]
+    prices = TIER_PRICES.get(tier, [])  # Get prices for the current tier
+
+    for i in range(len(labels)):
+        label_text = font.render(f'{labels[i]} (${prices[i]})', True, (0, 0, 0))
+        window.blit(label_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, i * SIDEBAR_ITEM_HEIGHT + 10))
+       
+    convert_button = font.render(f'Convert Energy To Money', True, (0, 0, 0), (125, 255, 125)) 
+    window.blit(convert_button, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, WINDOW_HEIGHT - 160))
+
+def display_page_switch_buttons():
+    # Display page switch buttons based on the current tier
+    # Adjust the y-position as needed based on the number of tiers and their respective positions
+    button_positions = [(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, WINDOW_HEIGHT - 120),
+                        (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, WINDOW_HEIGHT - 80)]
+
+    for i in range(len(button_positions)):
+        button_text = font.render(f'Page {i+1}', True, (0, 0, 0), (200, 200, 200))
+        window.blit(button_text, button_positions[i])
+
+# Example usage: Display tier 1 sidebar and page switch buttons
+current_tier = 1
+display_sidebar(current_tier)
+display_page_switch_buttons()
+
+# Main game loop (replace this with your actual game loop)
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    pygame.display.flip()
+
+pygame.quit()
