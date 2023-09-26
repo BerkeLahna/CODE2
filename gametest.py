@@ -148,7 +148,7 @@ class Button():
         self.command = command
 
     def draw(self, surface):
-        pygame.draw.rect(surface,GRAY , self.rect)
+        pygame.draw.rect(surface,(0, 80, 200), self.rect)
         if self.text:
             text = self.font.render(self.text, True, (255, 255, 255))
             text_rect = text.get_rect(center=self.rect.center)
@@ -270,9 +270,9 @@ font = pygame.font.Font(None, 24)
 
 # Initialize game objects
 player = Player()
-energy_generator = EnergyGenerator(1)  # Slower energy generation
-energy_converter = EnergyConverter(1)  # More efficient conversion
-office = Office(1)
+# energy_generator = EnergyGenerator(1)  # Slower energy generation
+# energy_converter = EnergyConverter(1)  # More efficient conversion
+# office = Office(1)
 heat_grid = [[0 for _ in range(NUM_TILES_Y)] for _ in range(NUM_TILES_X)]  # Heat grid for generators
 
 # Initialize the grid with empty tiles
@@ -334,6 +334,7 @@ forward_button = Button(1100, 255, 100, 30, '>>', lambda: print('Button clicked'
 previous_button = Button(815, 255, 100, 30, '<<', lambda: print('Button clicked'))
 testbutton = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, SIDEBAR_ITEM_HEIGHT , 100, 30, 'Buy')
 delete_multiple_button = Button(961, 295 , 100, 30, 'X')
+print_multiple_button = Button(961, 255 , 100, 30, 'Print')
 
 
 state = "Buy"
@@ -346,25 +347,29 @@ while running:
             running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
+            grid_x = mouse_pos[0] // TILE_SIZE
+            grid_y = mouse_pos[1] // TILE_SIZE
             if event.button == 1:  # Left click
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 print("Clicked ", mouse_x//TILE_SIZE, mouse_y//TILE_SIZE)
                 # if testbutton.rect.collidepoint(mouse_pos):
                 #     print("test")
-                if previous_button.rect.collidepoint(mouse_pos) and current_tier > 1:
+                if print_multiple_button.rect.collidepoint(mouse_pos):
+                    print(grid)
+                elif previous_button.rect.collidepoint(mouse_pos) and current_tier > 1:
                     current_tier -=1
                     
-                if forward_button.rect.collidepoint(mouse_pos) and current_tier < 8:
+                elif forward_button.rect.collidepoint(mouse_pos) and current_tier < 8:
                     current_tier +=1
 
-                if buy_button1.rect.collidepoint(mouse_pos):
+                elif buy_button1.rect.collidepoint(mouse_pos):
                     state = "Buy"
                     print("Buy button clicked")
-                if upgrade_button1.rect.collidepoint(mouse_pos):
+                elif upgrade_button1.rect.collidepoint(mouse_pos):
                     state = "Upgrade"
                     print("upgrade button clicked")
                     
-                if delete_multiple_button.rect.collidepoint(mouse_pos):
+                elif delete_multiple_button.rect.collidepoint(mouse_pos):
                     # Enter delete multiple mode
                     selected_tiles = []
                     x_of_building =[]
@@ -376,13 +381,9 @@ while running:
                                 running = False
                                 delete_multiple_mode = False
                             elif event.type == pygame.MOUSEBUTTONDOWN:
-                                mouse_pos = pygame.mouse.get_pos()
-                                if event.button == 1:  # Left click
-                                        # Add selected tile to list
-                                    grid_x = mouse_pos[0] // TILE_SIZE
-                                    grid_y = mouse_pos[1] // TILE_SIZE
-  
-                                    if (grid[grid_x][grid_y]) not in selected_tiles and grid[grid_x][grid_y] != TILE_EMPTY:
+
+                                if event.button == 1 and grid[grid_x][grid_y] != TILE_EMPTY:  # Left click
+                                    if (grid[grid_x][grid_y]) not in selected_tiles:
                                         x_of_building.append(grid_x)
                                         print(grid_x, grid_y)
                                         y_of_building.append(grid_y)
@@ -395,19 +396,18 @@ while running:
                                     # Cancel selection
                                     delete_multiple_mode = False
                     if(player.sell_multiple_buildings(selected_tiles)):
+                        print(selected_tiles)
                         for i in range(len(selected_tiles)):
-                            print("i" ,i)
-                            print("xandy: ",x_of_building[i], y_of_building[i])
-                            print("grid: ",grid[y_of_building[i]][x_of_building[i]])
-                            grid[y_of_building[i]][x_of_building[i]] = TILE_EMPTY
-                            selected_tiles.clear()
-                            x_of_building.clear()
-                            y_of_building.clear()
+                            grid[x_of_building[i]][y_of_building[i]] = TILE_EMPTY
+                            
+                            
+                            
 
 
                             
-                if WINDOW_WIDTH - SIDEBAR_WIDTH <= mouse_pos[0] < WINDOW_WIDTH and state == "Buy":
+                elif WINDOW_WIDTH - SIDEBAR_WIDTH <= mouse_pos[0] < WINDOW_WIDTH and state == "Buy":
                     selected_building = (mouse_pos[1] // SIDEBAR_ITEM_HEIGHT) + 1
+                    print("Selected building: ", selected_building)
                     building_tier = current_tier
                 elif WINDOW_WIDTH - SIDEBAR_WIDTH <= mouse_pos[0] < WINDOW_WIDTH and state == "Upgrade":
                     if(((mouse_pos[1] // SIDEBAR_ITEM_HEIGHT) + 1) == 1):
@@ -420,12 +420,12 @@ while running:
                         #need upgrade method
                         print("Office Upgraded")
                     
-                if WINDOW_WIDTH - SIDEBAR_WIDTH + 10 <= mouse_pos[0] < WINDOW_WIDTH - SIDEBAR_WIDTH + 290 and WINDOW_HEIGHT - 160 <= mouse_pos[1] < WINDOW_HEIGHT - 110:
+                elif WINDOW_WIDTH - SIDEBAR_WIDTH + 10 <= mouse_pos[0] < WINDOW_WIDTH - SIDEBAR_WIDTH + 290 and WINDOW_HEIGHT - 160 <= mouse_pos[1] < WINDOW_HEIGHT - 110:
                         # Convert energy to money
                         player.sell_energy(player.energy)  # Sell all available energy
                         # Update money display after successful conversion
                         money_text = font.render(f'Money: {int(player.money)}', True, (0, 0, 0))
-                else:
+                elif grid[grid_x][grid_y] == TILE_EMPTY:
                     # Place selected building on the grid
                     grid_x = mouse_pos[0] // TILE_SIZE
                     grid_y = mouse_pos[1] // TILE_SIZE
@@ -441,8 +441,7 @@ while running:
                             grid[grid_x][grid_y] = Office(current_tier)
             elif event.button == 3:  # Right click
                 # Sell selected building on the grid
-                grid_x = mouse_pos[0] // TILE_SIZE
-                grid_y = mouse_pos[1] // TILE_SIZE
+
                 if 0 <= grid_x < NUM_TILES_X and 0 <= grid_y < NUM_TILES_Y:
                     if isinstance(grid[grid_x][grid_y], EnergyConverter):
                         if(player.sell_building(grid[grid_x][grid_y])):
@@ -462,7 +461,8 @@ while running:
 
     #draw
     window.fill(GRAY)
-    pygame.draw.rect(window, WHITE, (WINDOW_WIDTH - SIDEBAR_WIDTH, 0, SIDEBAR_WIDTH, WINDOW_HEIGHT))   
+
+    pygame.draw.rect(window, (0, 105, 148), (WINDOW_WIDTH - SIDEBAR_WIDTH, 0, SIDEBAR_WIDTH, WINDOW_HEIGHT))   
     switch_view(state,current_tier)
     # display_sidebar(current_tier, current_page)
 
@@ -545,6 +545,7 @@ while running:
     forward_button.draw(window)
     previous_button.draw(window) 
     delete_multiple_button.draw(window)
+    print_multiple_button.draw(window)
     # testbutton.draw(window)
   
 
