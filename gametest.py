@@ -102,43 +102,36 @@ class Player:
 
 # EnergyGenerator class
 class EnergyGenerator:
-    def __init__(self, tier):
-        self.cost = 300*tier*(1 if tier == 1 else 4)
-        self.heat_per_tick = 5/60*tier*(1 if tier == 1 else 4)
+    def __init__(self, tier,upgrade):
+        self.cost = 300/4*tier*4
+        self.heat_per_tick = 5*tier*upgrade*1.50
         self.tier = tier
     def generate_heat(self):
         return self.heat_per_tick
     
-    def upgrade(self):
-        if self.tier < 8:
-            self.tier += 1
 
 class EnergyConverter:
-    def __init__(self,tier):
-        self.cost = 200*tier*(1 if tier == 1 else 4)
-        self.energy_per_heat = 2 * tier*(1 if tier == 1 else 4)
+    def __init__(self,tier,upgrade):
+        self.cost = 50*tier*4
+        self.energy_per_heat = 1 * tier*upgrade*1.25
         self.tier = tier
     def convert_heat(self, heat):
         return heat * self.energy_per_heat
     
-    def upgrade(self):
-        if self.tier < 8:
-            self.tier += 1
+
     
 
 class Office:
-    def __init__(self,tier):
-        self.energy_sell_rate = 5*tier*(1 if tier == 1 else 4)  # Energy selling rate for the office (per second)
-        self.cost = 500*tier*(4 if tier != 1 else 1)
+    def __init__(self,tier,upgrade):
+        self.energy_sell_rate = 1*tier*upgrade*1.5  # Energy selling rate for the office (per second)
+        self.cost = 125*tier*4
         self.tier = tier
     def sell_energy(self, player):
         # Sell energy at the defined rate
         if player.energy >= self.energy_sell_rate:
             player.energy -= self.energy_sell_rate 
             player.money += self.energy_sell_rate  # Assuming 1 energy = 10 money
-    def upgrade(self):
-        if self.tier < 8:
-            self.tier += 1
+
             
 class Button():
     def __init__(self, x, y, width, height, text='', command=None):
@@ -167,9 +160,9 @@ def switch_view(state, tier):
     if state == "Buy":
         # testbutton.button_update("Buy Converter")
         items = [
-            EnergyConverter(tier),
-            EnergyGenerator(tier),
-            Office(tier)
+            EnergyConverter(tier,CONVERTER_UPGRADE),
+            EnergyGenerator(tier,GENERATOR_UPGRADE),
+            Office(tier,OFFICE_UPGRADE)
         ]
 
         for i, item in enumerate(items):
@@ -190,6 +183,39 @@ def switch_view(state, tier):
         window.blit(label_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, 3 * SIDEBAR_ITEM_HEIGHT -40))
     
 
+def delete_mult():
+                        # Enter delete multiple mode
+    selected_tiles = []
+    x_of_building =[]
+    y_of_building =[]
+    delete_multiple_mode = True
+    while delete_multiple_mode:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                delete_multiple_mode = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                grid_x = mouse_pos[0] // TILE_SIZE
+                grid_y = mouse_pos[1] // TILE_SIZE
+                if event.button == 1 and grid[grid_x][grid_y] != TILE_EMPTY:  # Left click
+                    if (grid[grid_x][grid_y]) not in selected_tiles:
+                        x_of_building.append(grid_x)
+                        print(grid_x, grid_y)
+                        y_of_building.append(grid_y)
+                        selected_tiles.append((grid[grid_x][grid_y]))
+                        rect = pygame.Rect(grid_x * TILE_SIZE, grid_y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+                        pygame.draw.rect(window, HIGHLIGHT_COLOR, rect, 2) # the last parameter is the thickness of the border
+                        pygame.display.flip()
+
+                elif event.button == 3:  # Right click
+                    # Cancel selection
+                    delete_multiple_mode = False
+    if(player.sell_multiple_buildings(selected_tiles)):
+        print(selected_tiles)
+        for i in range(len(selected_tiles)):
+            grid[x_of_building[i]][y_of_building[i]] = TILE_EMPTY
+                            
     
 def display_sidebar(tier, page):
     print("display_sidebar")
@@ -277,6 +303,9 @@ heat_grid = [[0 for _ in range(NUM_TILES_Y)] for _ in range(NUM_TILES_X)]  # Hea
 
 # Initialize the grid with empty tiles
 grid = [[TILE_EMPTY for _ in range(NUM_TILES_Y)] for _ in range(NUM_TILES_X)]
+converters= []
+generators = []
+offices = []
 
 
 
@@ -370,45 +399,13 @@ while running:
                     print("upgrade button clicked")
                     
                 elif delete_multiple_button.rect.collidepoint(mouse_pos):
-                    # Enter delete multiple mode
-                    selected_tiles = []
-                    x_of_building =[]
-                    y_of_building =[]
-                    delete_multiple_mode = True
-                    while delete_multiple_mode:
-                        for event in pygame.event.get():
-                            if event.type == pygame.QUIT:
-                                running = False
-                                delete_multiple_mode = False
-                            elif event.type == pygame.MOUSEBUTTONDOWN:
-
-                                if event.button == 1 and grid[grid_x][grid_y] != TILE_EMPTY:  # Left click
-                                    if (grid[grid_x][grid_y]) not in selected_tiles:
-                                        x_of_building.append(grid_x)
-                                        print(grid_x, grid_y)
-                                        y_of_building.append(grid_y)
-                                        selected_tiles.append((grid[grid_x][grid_y]))
-                                        rect = pygame.Rect(grid_x * TILE_SIZE, grid_y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-                                        pygame.draw.rect(window, HIGHLIGHT_COLOR, rect, 2) # the last parameter is the thickness of the border
-                                        pygame.display.flip()
-
-                                elif event.button == 3:  # Right click
-                                    # Cancel selection
-                                    delete_multiple_mode = False
-                    if(player.sell_multiple_buildings(selected_tiles)):
-                        print(selected_tiles)
-                        for i in range(len(selected_tiles)):
-                            grid[x_of_building[i]][y_of_building[i]] = TILE_EMPTY
-                            
-                            
-                            
-
-
-                            
+                    delete_mult()
+                                  
                 elif WINDOW_WIDTH - SIDEBAR_WIDTH <= mouse_pos[0] < WINDOW_WIDTH and state == "Buy":
                     selected_building = (mouse_pos[1] // SIDEBAR_ITEM_HEIGHT) + 1
                     print("Selected building: ", selected_building)
                     building_tier = current_tier
+                    
                 elif WINDOW_WIDTH - SIDEBAR_WIDTH <= mouse_pos[0] < WINDOW_WIDTH and state == "Upgrade":
                     if(((mouse_pos[1] // SIDEBAR_ITEM_HEIGHT) + 1) == 1):
                          #need upgrade method
@@ -416,6 +413,9 @@ while running:
                     elif(((mouse_pos[1] // SIDEBAR_ITEM_HEIGHT) + 1) == 2):
                          #need upgrade method
                         print("Generator Upgraded")
+                        GENERATOR_UPGRADE+=1
+                        print(GENERATOR_UPGRADE)
+
                     elif(((mouse_pos[1] // SIDEBAR_ITEM_HEIGHT) + 1) == 3): 
                         #need upgrade method
                         print("Office Upgraded")
@@ -430,15 +430,18 @@ while running:
                     grid_x = mouse_pos[0] // TILE_SIZE
                     grid_y = mouse_pos[1] // TILE_SIZE
                     if 0 <= grid_x < NUM_TILES_X and 0 <= grid_y < NUM_TILES_Y:
-                        if selected_building == 1 and player.buy_energy_generator(EnergyConverter(current_tier)):
+                        if selected_building == 1 and player.buy_energy_generator(EnergyConverter(current_tier,GENERATOR_UPGRADE)):
                             print("Converter bought")
-                            grid[grid_x][grid_y] = EnergyConverter(current_tier)
-                        elif selected_building == 2 and player.buy_energy_generator(EnergyGenerator(current_tier)):
+                            grid[grid_x][grid_y] = EnergyConverter(current_tier,GENERATOR_UPGRADE)
+                            converters.append(grid[grid_x][grid_y])
+                        elif selected_building == 2 and player.buy_energy_generator(EnergyGenerator(current_tier,CONVERTER_UPGRADE)):
                             print("Generator bought")
-                            grid[grid_x][grid_y] = EnergyGenerator(current_tier)
-                        elif selected_building == 3 and player.buy_energy_generator(Office(current_tier)):
+                            grid[grid_x][grid_y] = EnergyGenerator(current_tier,CONVERTER_UPGRADE)
+                            generators.append(grid[grid_x][grid_y]) 
+                        elif selected_building == 3 and player.buy_energy_generator(Office(current_tier,OFFICE_UPGRADE)):
                             print("Office bought")
-                            grid[grid_x][grid_y] = Office(current_tier)
+                            grid[grid_x][grid_y] = Office(current_tier,OFFICE_UPGRADE)
+                            offices.append(grid[grid_x][grid_y])
             elif event.button == 3:  # Right click
                 # Sell selected building on the grid
 
