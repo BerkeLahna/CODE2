@@ -307,10 +307,11 @@ def switch_view(state, tier):
            
             
         for i in range(len(Researches)):
-            if Researches[i+1][0] == False:
-                menu_button_list[i].button_update(f'Unlock Tier {(current_tier+1 if current_tier < 3 else 3)} {Labels[i]} ({Researches[i+1][1]*(1 if current_tier < 2 else 10) } Research)',image_list[i][tier+1])
+            if Researches[building_list[i]][0] == False:
+                menu_button_list[i].button_update(f'Unlock Tier {(current_tier+1 if current_tier < 3 else 3)} {Labels[i]} ({Researches[building_list[i]][1]*(1 if current_tier < 2 else 10) } Research)',image_list[i][tier+1])
             else:
                 menu_button_list[i].button_update(f'Research Bought!')
+                
 
     
 
@@ -351,6 +352,11 @@ def energy_gen():
 # def refresh_display():
 #     pygame.display.flip()
 
+
+def research_check(building):
+    if building.tier == 2:
+        if Researches[building][0] == True:
+            return True
 
     
     
@@ -518,10 +524,10 @@ TIER_PRICES = {
 
 
 Researches = {
-    1: (False, 1000),
-    2: (False, 1000),
-    3: (False, 1000),
-    4: (False, 1000)
+    HeatGenerator: (False, 1000),
+    EnergyConverter : (False, 1000),
+    Office: (False, 1000),
+    ResearchLab: (False, 1000)
 }
     
 
@@ -706,26 +712,29 @@ while running:
                             Researches[1] = list(Researches[1])  # Convert tuple to list
                             Researches[1][0] = True  # Modify boolean value
                             Researches[1] = tuple(Researches[1]) 
-
+                            
                     elif(((mouse_pos[1] // SIDEBAR_ITEM_HEIGHT) + 1) == 2):
-                        if player.buy_research_upgrade(Researches[1][1]):
-                            Researches[2] = list(Researches[1])  # Convert tuple to list
+                        
+                        if player.buy_research_upgrade(Researches[2][1]):
+                            Researches[2] = list(Researches[2])  # Convert tuple to list
                             Researches[2][0] = True  # Modify boolean value
-                            Researches[2] = tuple(Researches[1]) 
+                            Researches[2] = tuple(Researches[2]) 
 
 
 
                     elif(((mouse_pos[1] // SIDEBAR_ITEM_HEIGHT) + 1) == 3): 
-                        if player.buy_research_upgrade(Researches[1][1]):
-                            Researches[3] = list(Researches[1])  # Convert tuple to list
+                        
+                        if player.buy_research_upgrade(Researches[3][1]):
+                            Researches[3] = list(Researches[3])  # Convert tuple to list
                             Researches[3][0] = True  # Modify boolean value
-                            Researches[3] = tuple(Researches[1]) 
+                            Researches[3] = tuple(Researches[3]) 
                             
                     elif(((mouse_pos[1] // SIDEBAR_ITEM_HEIGHT) + 1) == 4): 
-                        if player.buy_research_upgrade(Researches[1][1]):
-                            Researches[4] = list(Researches[1])  # Convert tuple to list
+                        
+                        if player.buy_research_upgrade(Researches[4][1]):
+                            Researches[4] = list(Researches[4])  # Convert tuple to list
                             Researches[4][0] = True  # Modify boolean value
-                            Researches[4] = tuple(Researches[1]) 
+                            Researches[4] = tuple(Researches[4]) 
 
 
 
@@ -772,19 +781,19 @@ while running:
                     grid_x = mouse_pos[0] // TILE_SIZE
                     grid_y = mouse_pos[1] // TILE_SIZE
                     if 0 <= grid_x < NUM_TILES_X and 0 <= grid_y < NUM_TILES_Y:
-                        if selected_building == 1 and player.buy_energy_generator(HeatGenerator(current_tier,GENERATOR_UPGRADE)):
+                        if selected_building == 1 and player.buy_energy_generator(HeatGenerator(current_tier,GENERATOR_UPGRADE)) and research_check(HeatGenerator(current_tier,GENERATOR_UPGRADE)):
                             print("Generator bought")
                             grid[grid_x][grid_y] = HeatGenerator(current_tier,GENERATOR_UPGRADE)
                             generators.append(grid[grid_x][grid_y]) 
-                        elif selected_building == 2 and player.buy_energy_generator(EnergyConverter(current_tier,CONVERTER_UPGRADE)):
+                        elif selected_building == 2 and player.buy_energy_generator(EnergyConverter(current_tier,CONVERTER_UPGRADE)) and research_check(EnergyConverter(current_tier,CONVERTER_UPGRADE)):
                             print("Converter bought")
                             grid[grid_x][grid_y] = EnergyConverter(current_tier,CONVERTER_UPGRADE)
                             converters.append(grid[grid_x][grid_y])
-                        elif selected_building == 3 and player.buy_energy_generator(Office(current_tier,OFFICE_UPGRADE)):
+                        elif selected_building == 3 and player.buy_energy_generator(Office(current_tier,OFFICE_UPGRADE)) and research_check(Office(current_tier,OFFICE_UPGRADE)):
                             print("Office bought")
                             grid[grid_x][grid_y] = Office(current_tier,OFFICE_UPGRADE)
                             offices.append(grid[grid_x][grid_y])
-                        elif selected_building == 4 and player.buy_energy_generator(ResearchLab(current_tier,RESEARCHLAB_UPGRADE)):
+                        elif selected_building == 4 and player.buy_energy_generator(ResearchLab(current_tier,RESEARCHLAB_UPGRADE)) and research_check(ResearchLab(current_tier,RESEARCHLAB_UPGRADE)):
                             print("Lab bought")
                             grid[grid_x][grid_y] = ResearchLab(current_tier,RESEARCHLAB_UPGRADE)
                             labs.append(grid[grid_x][grid_y])
