@@ -6,7 +6,7 @@ import threading
 class Player:
     def __init__(self):
         self.energy = 0
-        self.money = 100000
+        self.money = 1000000
         self.research = 0
         self.max_energy = 200
 
@@ -239,7 +239,8 @@ def handle_destruction(building):
                 explosion_delay = 100
                 last_explosion_time = pygame.time.get_ticks()
                 explosion_frame = 1
-                
+
+
                 while explosion_frame < len(explosion_images):
                     now = pygame.time.get_ticks()
                     if now - last_explosion_time > explosion_delay:
@@ -248,7 +249,7 @@ def handle_destruction(building):
                     explosion_image = explosion_images[explosion_frame].convert_alpha()
 
                     window.blit(explosion_image, (x, y))
-                    pygame.display.update()
+                    pygame.display.update(x,y,TILE_SIZE,TILE_SIZE)
                 return 0
             
 def switch_view(state, tier):
@@ -369,6 +370,13 @@ def energy_gen():
                 elif isinstance(grid[i][j], HeatGenerator) and grid[i][j].tier == 1 :
                     grid[i][j].generate_heat()
 
+
+#     energy_gen_thread = threading.Thread(target=refresh_display)
+#     energy_gen_thread.start()
+# def refresh_display():
+#     pygame.display.flip()
+
+
 def delete_mult():
                      
     selected_tiles = []
@@ -378,7 +386,7 @@ def delete_mult():
     font1 = pygame.font.Font(None, 26)
     label_text = font1.render('Select Buildings To Sell, Right Click To Sell Or Cancel', True, (255, 0, 0), (0, 0, 0))
     window.blit(label_text, (WINDOW_WIDTH - SIDEBAR_WIDTH , 5* SIDEBAR_ITEM_HEIGHT -40 ))
-    pygame.display.flip()
+    # pygame.display.flip()
 
     while delete_multiple_mode:
         for event in pygame.event.get():
@@ -398,6 +406,8 @@ def delete_mult():
                         rect = pygame.Rect(grid_x * TILE_SIZE, grid_y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
                         pygame.draw.rect(window, HIGHLIGHT_COLOR, rect, 2) # the last parameter is the thickness of the border
                         pygame.display.flip()
+                        # pygame.display.update(rect)
+
 
                 elif event.button == 3:  # Right click
                     # Cancel selection
@@ -598,7 +608,7 @@ explosion_images = {
     2 : pygame.transform.scale(pygame.image.load('Data/explosion2.png'), (50,50)),
     3 : pygame.transform.scale(pygame.image.load('Data/explosion3.png'), (50,50)),
     4 : pygame.transform.scale(pygame.image.load('Data/explosion4.png'), (50,50)),
-    5 : pygame.transform.scale(pygame.image.load('Data/explosion5.png'), (50,50)),
+    5 : pygame.transform.scale(pygame.image.load('Data/explosion5_scuffed.png'), (50,50)),
     6 : pygame.transform.scale(pygame.image.load('Data/explosion6.png'), (50,50)),
     7 : pygame.transform.scale(pygame.image.load('Data/explosion7.png'), (50,50))
 }
@@ -901,9 +911,10 @@ while running:
 
         
     # window.blit(convert_button, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, WINDOW_HEIGHT - 160))
-    
-    pygame.draw.rect(window, (0, 105, 148), (WINDOW_WIDTH - SIDEBAR_WIDTH, 0, SIDEBAR_WIDTH, WINDOW_HEIGHT))   
+    #Draw sidebar
+    pygame.draw.rect(window, (0, 105, 148), (WINDOW_WIDTH - SIDEBAR_WIDTH, 0, SIDEBAR_WIDTH, WINDOW_HEIGHT)) 
     switch_view(state,current_tier)
+    
     # Display game information (money and power)
     money_text = font.render(f'Money: {int(player.money)}', True, (0, 0, 0))
     energy_text = font.render(f'Energy: {int(player.energy)}/{int(player.max_energy)}', True, (0, 0, 0))
