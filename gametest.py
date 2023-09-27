@@ -114,56 +114,63 @@ class Player:
 # HeatGenerator class
 class HeatGenerator:
     def __init__(self, tier,upgrade):
-        self.cost = 1
+        self.cost = 100*(4^(tier-1))*(tier-1)+(1 if tier == 1 else 0)
         self.heat_per_tick = 1*tier*upgrade*1.50
         self.tier = tier
     def generate_heat(self):
+        
         if(self.tier > 1):
             return self.heat_per_tick
         else:
-            player.generate_energy(self.heat_per_tick/5000)
+            player.generate_energy(self.heat_per_tick)
             return 0
             
 
 class EnergyConverter:
     def __init__(self, tier, upgrade):
         self.cost = 50*tier*4
-        self.energy_per_heat = 1 * tier *upgrade * 1.25
-        self.heat_to_energy_per_tick = 1/20*tier*upgrade*1.50
         self.tier = tier
-        self.heat_since_last_conversion = 0
-        self.max_heat = 10*tier*upgrade*1.50
 
-    
+        self.max_heat = 10*tier*upgrade*2
+        self.heat_conversion_per_second = 1*tier*upgrade*1.25
+        self.stored_heat = 0
+
+
     def convert_heat(self, heat):
-        self.heat_since_last_conversion += heat/60
-        if self.heat_since_last_conversion < self.max_heat:
-            heat_to_convert = self.heat_to_energy_per_tick
-            energy_generated = heat_to_convert * self.energy_per_heat
-            self.heat_since_last_conversion -= heat_to_convert
-            return energy_generated
+
+        if heat <= self.heat_conversion_per_second:
+          player.generate_energy(heat)
+          print(f"aa {heat}/{self.heat_conversion_per_second} aa")
+
         else:
-            for i in range(NUM_TILES_X):
-                for j in range(NUM_TILES_Y):
-                    if grid[i][j] == self:
-                        grid[i][j] = TILE_EMPTY
-                        x = i * TILE_SIZE
-                        y = j * TILE_SIZE
-                        explosion_image = pygame.image.load("Data/explosion.png").convert_alpha()
-                        explosion_frames = [explosion_image.subsurface(pygame.Rect(x,y, TILE_SIZE, TILE_SIZE)) for i in range(4)]
-                        explosion_delay = 10
-                        last_explosion_time = pygame.time.get_ticks()
-                        explosion_frame = 0
-                        
-                        while explosion_frame < 1:
-                            now = pygame.time.get_ticks()
-                            if now - last_explosion_time > explosion_delay:
-                                explosion_frame += 1
-                                last_explosion_time = now
-                            explosion_image = explosion_frames[explosion_frame].convert_alpha()
-                            window.blit(explosion_image, (x, y))
-                            pygame.display.update()
-                        return 0
+            if self.stored_heat + heat < self.max_heat:
+                player.generate_energy(heat)
+                self.stored_heat += heat
+                print(f"Stored {self.stored_heat}/{self.max_heat} heat")
+            else:
+                for i in range(NUM_TILES_X):
+                    for j in range(NUM_TILES_Y):
+                        if grid[i][j] == self:
+                            grid[i][j] = TILE_EMPTY
+                            x = i * TILE_SIZE
+                            y = j * TILE_SIZE
+                            explosion_image = pygame.image.load("Data/explosion.png").convert_alpha()
+                            explosion_frames = [explosion_image.subsurface(pygame.Rect(x,y, TILE_SIZE, TILE_SIZE)) for i in range(4)]
+                            explosion_delay = 10
+                            last_explosion_time = pygame.time.get_ticks()
+                            explosion_frame = 0
+                            
+                            while explosion_frame < 1:
+                                now = pygame.time.get_ticks()
+                                if now - last_explosion_time > explosion_delay:
+                                    explosion_frame += 1
+                                    last_explosion_time = now
+                                explosion_image = explosion_frames[explosion_frame].convert_alpha()
+                                window.blit(explosion_image, (x, y))
+                                pygame.display.update()
+                            return 0
+        
+
 
 
 class Office:
@@ -210,7 +217,7 @@ class Button():
         self.text = text
             
 def switch_view(state, tier):
-    labels = ["Converter", "Generator", "Office"]
+
     if state == "Buy":
     
 
@@ -563,7 +570,7 @@ while running:
                         print("Converter Upgraded")
                         CONVERTER_UPGRADE+=1
                         for converter in converters:
-                            converter.energy_per_heat *= 1.25
+                            converter.heat_conversion_per_second *= 1.25
                         print(CONVERTER_UPGRADE)
 
                     elif(((mouse_pos[1] // SIDEBAR_ITEM_HEIGHT) + 1) == 3): 
@@ -629,30 +636,46 @@ while running:
 
     # Update game logic
 
-    # Generate heat from generators
-    total_heat_generated = 0
+    # # Generate heat from generators
+    # total_heat_generated = 0
+    # for i in range(NUM_TILES_X):
+    #     for j in range(NUM_TILES_Y):
+    #         if isinstance(grid[i][j], HeatGenerator):
+    #             # Generate heat in adjacent tiles
+    #             for x in range(i-1, i+2):
+    #                 for y in range(j-1, j+2):
+    #                     if 0 <= x < NUM_TILES_X and 0 <= y < NUM_TILES_Y and not (x == i and y == j):
+    #                         heat_grid[x][y] += grid[i][j].generate_heat()
+    #                         total_heat_generated += grid[i][j].generate_heat()
+
+    # # Convert heat to energy using converters
+    # total_energy = 0
+    # for i in range(NUM_TILES_X):
+    #     for j in range(NUM_TILES_Y):
+    #         if isinstance(grid[i][j], EnergyConverter):
+    #             total_energy += grid[i][j].convert_heat(heat_grid[i][j])
+    #             heat_grid[i][j] = 0  # Reset heat in the converter tile
+
+    # player.generate_energy(total_energy)
+    
     for i in range(NUM_TILES_X):
         for j in range(NUM_TILES_Y):
             if isinstance(grid[i][j], HeatGenerator):
                 # Generate heat in adjacent tiles
-                for x in range(i-1, i+2):
-                    for y in range(j-1, j+2):
-                        if 0 <= x < NUM_TILES_X and 0 <= y < NUM_TILES_Y and not (x == i and y == j):
-                            heat_grid[x][y] += grid[i][j].generate_heat()
-                            total_heat_generated += grid[i][j].generate_heat()
+                if isinstance(grid[i+1][j], EnergyConverter):
+                    grid[i+1][j].convert_heat(grid[i][j].generate_heat())
+                if isinstance(grid[i-1][j], EnergyConverter):
+                    grid[i-1][j].convert_heat(grid[i][j].generate_heat())
+                if isinstance(grid[i][j+1], EnergyConverter):
+                    grid[i][j+1].convert_heat(grid[i][j].generate_heat())
+                if isinstance(grid[i][j-1], EnergyConverter):
+                    grid[i][j-1].convert_heat(grid[i][j].generate_heat())
 
-    # Convert heat to energy using converters
-    total_energy = 0
-    for i in range(NUM_TILES_X):
-        for j in range(NUM_TILES_Y):
-            if isinstance(grid[i][j], EnergyConverter):
-                total_energy += grid[i][j].convert_heat(heat_grid[i][j])
-                heat_grid[i][j] = 0  # Reset heat in the converter tile
+                    
 
-    player.generate_energy(total_energy)
 
     # Calculate energy generation rate
-    energy_generation_rate = total_energy * FPS
+    # energy_generation_rate = total_energy * FPS
 
     # Sell energy using the office
     total_energy_sold = 0
@@ -728,7 +751,7 @@ while running:
     if 0 <= grid_x < NUM_TILES_X and 0 <= grid_y < NUM_TILES_Y:
         info_text = None
         if isinstance(grid[grid_x][grid_y], EnergyConverter):
-            info_text = font.render(f'Energy per heat: {grid[grid_x][grid_y].energy_per_heat}', True, (255, 255, 255))
+            info_text = font.render(f'Energy per heat: {grid[grid_x][grid_y].heat_conversion_per_second}', True, (255, 255, 255))
 
         elif isinstance(grid[grid_x][grid_y], HeatGenerator):
             info_text = font.render(f'Heat per tick: {grid[grid_x][grid_y].heat_per_tick}', True, (255, 255, 255))
