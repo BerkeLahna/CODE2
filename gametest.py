@@ -490,15 +490,15 @@ def delete_mult():
                 delete_multiple_mode = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
-                grid_x = mouse_pos[0] // TILE_SIZE
-                grid_y = mouse_pos[1] // TILE_SIZE
-                if event.button == 1 and (0 <= grid_x < NUM_TILES_X and 0 <= grid_y < NUM_TILES_Y) and grid[grid_x][grid_y] != TILE_EMPTY:  # Left click
+                grid_x = (mouse_pos[0]-move_x) // TILE_SIZE
+                grid_y = (mouse_pos[1]-move_y) // TILE_SIZE
+                if event.button == 1 and (0 <= grid_x < NUM_TILES_X*TILE_SIZE+move_x and 0 <= grid_y < NUM_TILES_Y*TILE_SIZE+move_y) and grid[grid_x][grid_y] != TILE_EMPTY:  # Left click
                     if (grid[grid_x][grid_y] not in selected_tiles):
                         x_of_building.append(grid_x)
                         print(grid_x, grid_y)
                         y_of_building.append(grid_y)
                         selected_tiles.append((grid[grid_x][grid_y]))
-                        rect = pygame.Rect(grid_x * TILE_SIZE, grid_y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+                        rect = pygame.Rect(grid_x * TILE_SIZE+move_x, grid_y * TILE_SIZE+move_y, TILE_SIZE, TILE_SIZE)
                         pygame.draw.rect(window, HIGHLIGHT_COLOR, rect, 2) # the last parameter is the thickness of the border
                         pygame.display.flip()
                         # pygame.display.update(rect)
@@ -996,27 +996,39 @@ scroll_bar_rect = pygame.Rect(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, 1 * SIDEBAR_ITE
 # side_bar.fill((200, 200, 200))
 # side_bar_rect = pygame.Rect(side_bar.get_rect())
 
+grid_rect = pygame.Rect(0, 0, NUM_TILES_X * TILE_SIZE, NUM_TILES_Y * TILE_SIZE)
 
 
 
 
 
-
-# Camera position
-camera_x = 0
-camera_y = 0
-mouse_dragging = False
-prev_mouse_pos = (0, 0)
+# # Camera position
+# camera_x = 0
+# camera_y = 0
+# mouse_dragging = False
+# prev_mouse_pos = (0, 0)
 
 
 
 button_creator()
 
 
+x_offset = 0
+y_offset = 0
+move_x=0
+move_y=0
+mouse_pos = pygame.mouse.get_pos()
+map_x_max = 300
+map_y_max = 300
+
+
 
 
 
 switch_view("Buy",current_tier)
+
+
+
 
 while running:
     for event in pygame.event.get():
@@ -1029,7 +1041,7 @@ while running:
             
             # if event.button == 1 and scroll_bar_rect.collidepoint(mouse_pos):  # Left click
             if event.button == 1 :  # Left click
-                dragging = True
+  
                 print(dragging)
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 print("Clicked ", mouse_x//TILE_SIZE, mouse_y//TILE_SIZE)
@@ -1157,12 +1169,13 @@ while running:
                     
 
                     # Place selected building on the grid
-                elif  selected_building != None and 0 < mouse_pos[0] < WINDOW_WIDTH - SIDEBAR_WIDTH  and grid[grid_x][grid_y] == TILE_EMPTY and state == "Buy" :
+                elif  selected_building != None and 0 < mouse_pos[0] < NUM_TILES_X*TILE_SIZE+move_x  and 0 < mouse_pos[1] <  NUM_TILES_Y*TILE_SIZE+move_y and grid[(mouse_pos[0]-move_x) // TILE_SIZE][(mouse_pos[1]-move_y) // TILE_SIZE] == TILE_EMPTY and state == "Buy" :
                     # if dragging == True:
                     #     print("dragging")
                     # Place selected building on the grid
-                    grid_x = mouse_pos[0] // TILE_SIZE
-                    grid_y = mouse_pos[1] // TILE_SIZE
+                    grid_x = (mouse_pos[0]-move_x) // TILE_SIZE
+                    grid_y = (mouse_pos[1]-move_y) // TILE_SIZE
+                    print((mouse_pos[1]-current_offset)// TILE_SIZE)
                                                              #BUY BUILDINGS 
                     if 0 <= grid_x < NUM_TILES_X and 0 <= grid_y < NUM_TILES_Y :
                         building_buildable = False
@@ -1201,20 +1214,34 @@ while running:
 
             elif event.button == 3:  # Right click
                 # Sell selected building on the grid
+                grid_x = (mouse_pos[0]-move_x) // TILE_SIZE
+                grid_y = (mouse_pos[1]-move_y) // TILE_SIZE
+                if   0 < mouse_pos[0] < NUM_TILES_X*TILE_SIZE+move_x and 0 < mouse_pos[1] <  NUM_TILES_Y*TILE_SIZE+move_y and grid[grid_x][grid_y] != TILE_EMPTY : 
 
-                if 0 <= grid_x < NUM_TILES_X and 0 <= grid_y < NUM_TILES_Y:
-                    if isinstance(grid[grid_x][grid_y], EnergyConverter):
-                        if(player.sell_building(grid[grid_x][grid_y])):
-                            grid[grid_x][grid_y] = TILE_EMPTY
-                    elif isinstance(grid[grid_x][grid_y], HeatGenerator):
-                        if(player.sell_building(grid[grid_x][grid_y])):
-                            grid[grid_x][grid_y] = TILE_EMPTY
-                    elif isinstance(grid[grid_x][grid_y], Office):
-                        if(player.sell_building(grid[grid_x][grid_y])):
-                            grid[grid_x][grid_y] = TILE_EMPTY
-                    elif isinstance(grid[grid_x][grid_y], ResearchLab):
+                    if  0<= grid_x < NUM_TILES_X and 0 <= grid_y < NUM_TILES_Y:
+                        if isinstance(grid[grid_x][grid_y], EnergyConverter):
                             if(player.sell_building(grid[grid_x][grid_y])):
                                 grid[grid_x][grid_y] = TILE_EMPTY
+                        elif isinstance(grid[grid_x][grid_y], HeatGenerator):
+                            if(player.sell_building(grid[grid_x][grid_y])):
+                                grid[grid_x][grid_y] = TILE_EMPTY
+                        elif isinstance(grid[grid_x][grid_y], Office):
+                            if(player.sell_building(grid[grid_x][grid_y])):
+                                grid[grid_x][grid_y] = TILE_EMPTY
+                        elif isinstance(grid[grid_x][grid_y], ResearchLab):
+                                if(player.sell_building(grid[grid_x][grid_y])):
+                                    grid[grid_x][grid_y] = TILE_EMPTY
+                                
+                else :
+                    dragging = True
+                   
+
+                    x_offset=mouse_pos[0]-move_x
+                    y_offset=mouse_pos[1]-move_y
+                    
+
+                    print("offset",x_offset,y_offset)
+                
             elif event.button == 4 and scroll_bar_rect.collidepoint(mouse_pos)   :  # Mouse wheel up
                
                 if current_offset > offsets[state][0]:
@@ -1228,16 +1255,22 @@ while running:
                     current_offset += scroll_speed
                     # print("scroll up",scroll_offset,current_offset," ",max_offset_top)
         elif event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 1:
+            if event.button == 3:
+                
+                move_x = mouse_pos[0] - x_offset
+                move_y = mouse_pos[1] - y_offset
+                print("move",move_x,move_y)
+
                 dragging = False
-                print(dragging)
     font = pygame.font.Font(None, 24)
 
 
 
     total_energy_sold = 0
 
-
+    # if not dragging:
+    #     x_offset = mouse_pos[0] 
+    #     y_offset = mouse_pos[1]
           
             
             
@@ -1259,21 +1292,36 @@ while running:
 
     tile_image = pygame.transform.scale(pygame.image.load('Data/tile2.jpg'), (50, 50))
 
-
+    if dragging :
        # Draw tiles and objects
-    for i in range(NUM_TILES_X):
-        for j in range(NUM_TILES_Y):
-            rect = pygame.Rect(i * TILE_SIZE, j * TILE_SIZE+current_offset, TILE_SIZE, TILE_SIZE)
-            if isinstance(grid[i][j], EnergyConverter) or isinstance(grid[i][j], HeatGenerator) or isinstance(grid[i][j], Office) or isinstance(grid[i][j], ResearchLab) or isinstance(grid[i][j], Battery):
-                for buildings in buy_menu:
-                    if buy_menu[buildings][0] == grid[i][j].name:
-                        window.blit(tile_images[buildings], rect)
-                        # window.blit(tile_image, rect)
-                        # window.blit(buy_menu[buildings][2],(i * TILE_SIZE+5, j * TILE_SIZE+5, TILE_SIZE, TILE_SIZE) )
+        for i in range(NUM_TILES_X):
+            for j in range(NUM_TILES_Y):
+                rect = pygame.Rect(i * TILE_SIZE+mouse_pos[0]-x_offset, j * TILE_SIZE+(mouse_pos[1]-y_offset), TILE_SIZE, TILE_SIZE)
+                if isinstance(grid[i][j], EnergyConverter) or isinstance(grid[i][j], HeatGenerator) or isinstance(grid[i][j], Office) or isinstance(grid[i][j], ResearchLab) or isinstance(grid[i][j], Battery):
+                    
+                    for buildings in buy_menu:
+                        if buy_menu[buildings][0] == grid[i][j].name:
+                            window.blit(tile_images[buildings], rect)
+                            # window.blit(tile_image, rect)
+                            # window.blit(buy_menu[buildings][2],(i * TILE_SIZE+5, j * TILE_SIZE+5, TILE_SIZE, TILE_SIZE) )
 
-            else:
-                window.blit(tile_image, rect)
-    
+                else:
+                    window.blit(tile_image, rect)
+    else:
+        for i in range(NUM_TILES_X):
+            for j in range(NUM_TILES_Y):
+                rect = pygame.Rect(i * TILE_SIZE+move_x, j * TILE_SIZE+move_y, TILE_SIZE, TILE_SIZE)
+                if isinstance(grid[i][j], EnergyConverter) or isinstance(grid[i][j], HeatGenerator) or isinstance(grid[i][j], Office) or isinstance(grid[i][j], ResearchLab) or isinstance(grid[i][j], Battery):
+                    
+                    for buildings in buy_menu:
+                        if buy_menu[buildings][0] == grid[i][j].name:
+                            window.blit(tile_images[buildings], rect)
+                            # window.blit(tile_image, rect)
+                            # window.blit(buy_menu[buildings][2],(i * TILE_SIZE+5, j * TILE_SIZE+5, TILE_SIZE, TILE_SIZE) )
+
+                else:
+                    window.blit(tile_image, rect)
+        
     # window.blit(converter_menu_images[1], (5, 5,50,50))
     
     
@@ -1322,6 +1370,9 @@ while running:
     
     scroll_tracker.draw(window)
     
+    
+    
+    grid_rect.move_ip(0, -scroll_offset)
     # testbutton.draw(window)
     scroll_offset = 0
     
@@ -1362,8 +1413,8 @@ while running:
     # window.blit(test,( mouse_pos[0], mouse_pos[1]))
 
 
-    grid_x = mouse_pos[0] // TILE_SIZE
-    grid_y = mouse_pos[1] // TILE_SIZE
+    grid_x = (mouse_pos[0]-move_x )// TILE_SIZE
+    grid_y = (mouse_pos[1]-+move_y) // TILE_SIZE
     if 0 <= grid_x < NUM_TILES_X and 0 <= grid_y < NUM_TILES_Y:
         info_text = None
         if isinstance(grid[grid_x][grid_y], EnergyConverter):
