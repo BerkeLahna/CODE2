@@ -1257,8 +1257,19 @@ while running:
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 3:
                 
-                move_x = mouse_pos[0] - x_offset
-                move_y = mouse_pos[1] - y_offset
+                if mouse_pos[0]-x_offset < 400 and mouse_pos[0]-x_offset > 0:
+                    move_x = mouse_pos[0] - x_offset
+                elif mouse_pos[0]-x_offset > 400:
+                    move_x = 400
+                elif mouse_pos[0]-x_offset < 0:
+                    move_x = 0
+            
+                if mouse_pos[1]-y_offset < 400 and mouse_pos[1]-y_offset > 0:
+                    move_y = mouse_pos[1] - y_offset
+                elif mouse_pos[1]-y_offset > 400:
+                    move_y = 400
+                elif mouse_pos[1]-y_offset < 0:
+                    move_y = 0
                 print("move",move_x,move_y)
 
                 dragging = False
@@ -1296,7 +1307,8 @@ while running:
        # Draw tiles and objects
         for i in range(NUM_TILES_X):
             for j in range(NUM_TILES_Y):
-                rect = pygame.Rect(i * TILE_SIZE+mouse_pos[0]-x_offset, j * TILE_SIZE+(mouse_pos[1]-y_offset), TILE_SIZE, TILE_SIZE)
+                print("dragging",mouse_pos[0]-x_offset)
+                rect = pygame.Rect(i * TILE_SIZE+(mouse_pos[0]-x_offset if mouse_pos[0]-x_offset< 400  and mouse_pos[0]-x_offset> 0 else (400 if mouse_pos[0]-x_offset > 0 else 0)) , j * TILE_SIZE+(mouse_pos[1]-y_offset if mouse_pos[1]-y_offset < 400  and mouse_pos[1]-y_offset> 0 else (400 if mouse_pos[1]-y_offset > 0 else 0)), TILE_SIZE, TILE_SIZE)
                 if isinstance(grid[i][j], EnergyConverter) or isinstance(grid[i][j], HeatGenerator) or isinstance(grid[i][j], Office) or isinstance(grid[i][j], ResearchLab) or isinstance(grid[i][j], Battery):
                     
                     for buildings in buy_menu:
