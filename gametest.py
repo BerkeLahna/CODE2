@@ -1104,7 +1104,7 @@ map_y_max = 300
 
 
 switch_view("Buy",current_tier)
-grid = load_grid("save.json",player,grid)
+# grid = load_grid("save.json",player,grid)
 save_buildings= []
 
 
@@ -1332,22 +1332,32 @@ while running:
                     scroll_offset -= scroll_speed
                     current_offset += scroll_speed
                     # print("scroll up",scroll_offset,current_offset," ",max_offset_top)
+                    
+            elif event.button == 4 and 0<mouse_pos[0] < WINDOW_WIDTH and 0<mouse_pos[1] < WINDOW_HEIGHT  :  # Mouse wheel up,
+                TILE_SIZE = TILE_SIZE+5
+            
+            elif event.button == 5 and 0<mouse_pos[0] < WINDOW_WIDTH and 0<mouse_pos[1] < WINDOW_HEIGHT  :
+                TILE_SIZE = TILE_SIZE-5
+                if TILE_SIZE < 20:
+                    TILE_SIZE = 20
+            
+            
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 3:
                 
-                if mouse_pos[0]-x_offset < 400 and mouse_pos[0]-x_offset > 0:
+                if mouse_pos[0]-x_offset < 400 and mouse_pos[0]-x_offset > -1300:
                     move_x = mouse_pos[0] - x_offset
                 elif mouse_pos[0]-x_offset > 400:
                     move_x = 400
-                elif mouse_pos[0]-x_offset < 0:
-                    move_x = 0
+                elif mouse_pos[0]-x_offset < 900:
+                    move_x = -1300
             
-                if mouse_pos[1]-y_offset < 400 and mouse_pos[1]-y_offset > 0:
+                if mouse_pos[1]-y_offset < 400 and mouse_pos[1]-y_offset > -300:
                     move_y = mouse_pos[1] - y_offset
                 elif mouse_pos[1]-y_offset > 400:
                     move_y = 400
-                elif mouse_pos[1]-y_offset < 0:
-                    move_y = 0
+                elif mouse_pos[1]-y_offset < -300:
+                    move_y = -300
                 print("move",move_x,move_y)
 
                 dragging = False
@@ -1385,38 +1395,101 @@ while running:
     window.blit(background_surface, (0,0,WINDOW_WIDTH - SIDEBAR_WIDTH ,WINDOW_HEIGHT))
 
 
-    tile_image = pygame.transform.scale(pygame.image.load('Data/tile2.jpg'), (50, 50))
+    tile_image = pygame.transform.scale(pygame.image.load('Data/tile2.jpg'), (TILE_SIZE, TILE_SIZE))
     
 
+    # if dragging :
+    #    # Draw tiles and objects
+    #     for i in range(NUM_TILES_X):
+    #         for j in range(NUM_TILES_Y):
+    #             rect = pygame.Rect(i * TILE_SIZE+(mouse_pos[0]-x_offset if mouse_pos[0]-x_offset< 400  and mouse_pos[0]-x_offset> 0 else (400 if mouse_pos[0]-x_offset > 0 else 0)) , j * TILE_SIZE+(mouse_pos[1]-y_offset if mouse_pos[1]-y_offset < 400  and mouse_pos[1]-y_offset> 0 else (400 if mouse_pos[1]-y_offset > 0 else 0)), TILE_SIZE, TILE_SIZE)
+    #             if isinstance(grid[i][j], EnergyConverter) or isinstance(grid[i][j], HeatGenerator) or isinstance(grid[i][j], Office) or isinstance(grid[i][j], ResearchLab) or isinstance(grid[i][j], Battery):
+                    
+    #                 for buildings in buy_menu:
+    #                     if buy_menu[buildings][0] == grid[i][j].name:
+    #                         window.blit(tile_images[buildings], rect)
+    #                         # window.blit(tile_image, rect)
+    #                         # window.blit(buy_menu[buildings][2],(i * TILE_SIZE+5, j * TILE_SIZE+5, TILE_SIZE, TILE_SIZE) )
+
+    #             else:
+    #                 window.blit(tile_image, rect)
+    # else:
+    #     for i in range(NUM_TILES_X):
+    #         for j in range(NUM_TILES_Y):
+    #             rect = pygame.Rect(i * TILE_SIZE+move_x, j * TILE_SIZE+move_y, TILE_SIZE, TILE_SIZE)
+    #             if isinstance(grid[i][j], EnergyConverter) or isinstance(grid[i][j], HeatGenerator) or isinstance(grid[i][j], Office) or isinstance(grid[i][j], ResearchLab) or isinstance(grid[i][j], Battery):
+                    
+    #                 for buildings in buy_menu:
+    #                     if buy_menu[buildings][0] == grid[i][j].name:
+    #                         window.blit(tile_images[buildings], rect)
+    #                         # window.blit(tile_image, rect)
+    #                         # window.blit(buy_menu[buildings][2],(i * TILE_SIZE+5, j * TILE_SIZE+5, TILE_SIZE, TILE_SIZE) )
+
+    #             else:
+    #                 window.blit(tile_image, rect)
+    
+    
+    
+    # for row in range(len(turkey_grid)):
+    #     for col in range(len(turkey_grid[row])-10):
+
+    #         rect = pygame.Rect(row * TILE_SIZE, col * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+    #         if turkey_grid[row][col] == 1:
+    #             window.blit(pygame.transform.scale(pygame.image.load('Data/tile2.jpg'), (50,50)), rect)
+            
+    #         else:
+    #             window.blit(pygame.transform.scale(pygame.image.load('Data/background.jpg'), (50,50)), rect)
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ # BUYING BUILDINGS STILL PLACES THE BUILDINGS ON THE GRID, AND STILL CAN BE DRAGGED BUT NEEDS TO BE ON TURKEY GRID
+ 
+ 
+ 
     if dragging :
        # Draw tiles and objects
-        for i in range(NUM_TILES_X):
-            for j in range(NUM_TILES_Y):
-                rect = pygame.Rect(i * TILE_SIZE+(mouse_pos[0]-x_offset if mouse_pos[0]-x_offset< 400  and mouse_pos[0]-x_offset> 0 else (400 if mouse_pos[0]-x_offset > 0 else 0)) , j * TILE_SIZE+(mouse_pos[1]-y_offset if mouse_pos[1]-y_offset < 400  and mouse_pos[1]-y_offset> 0 else (400 if mouse_pos[1]-y_offset > 0 else 0)), TILE_SIZE, TILE_SIZE)
-                if isinstance(grid[i][j], EnergyConverter) or isinstance(grid[i][j], HeatGenerator) or isinstance(grid[i][j], Office) or isinstance(grid[i][j], ResearchLab) or isinstance(grid[i][j], Battery):
+        for i in range(len(turkey_grid)):
+            for j in range(len(turkey_grid[i])):
+                rect = pygame.Rect(i * TILE_SIZE+(mouse_pos[0]-x_offset if mouse_pos[0]-x_offset< 400  and mouse_pos[0]-x_offset> -1300 else (400 if mouse_pos[0]-x_offset > -1300 else -1300)) , j * TILE_SIZE+(mouse_pos[1]-y_offset if mouse_pos[1]-y_offset < 400  and mouse_pos[1]-y_offset> -300 else (400 if mouse_pos[1]-y_offset > -300 else -300)), TILE_SIZE, TILE_SIZE)
+                if isinstance(turkey_grid[i][j], EnergyConverter) or isinstance(turkey_grid[i][j], HeatGenerator) or isinstance(turkey_grid[i][j], Office) or isinstance(turkey_grid[i][j], ResearchLab) or isinstance(turkey_grid[i][j], Battery):
                     
                     for buildings in buy_menu:
-                        if buy_menu[buildings][0] == grid[i][j].name:
+                        if buy_menu[buildings][0] == turkey_grid[i][j].name:
                             window.blit(tile_images[buildings], rect)
                             # window.blit(tile_image, rect)
                             # window.blit(buy_menu[buildings][2],(i * TILE_SIZE+5, j * TILE_SIZE+5, TILE_SIZE, TILE_SIZE) )
 
-                else:
+                elif turkey_grid[i][j] == 1:
                     window.blit(tile_image, rect)
+                # else:
+                #     # window.blit(background_image, rect)
     else:
-        for i in range(NUM_TILES_X):
-            for j in range(NUM_TILES_Y):
+        for i in range(len(turkey_grid)):
+            for j in range(len(turkey_grid[i])):
                 rect = pygame.Rect(i * TILE_SIZE+move_x, j * TILE_SIZE+move_y, TILE_SIZE, TILE_SIZE)
-                if isinstance(grid[i][j], EnergyConverter) or isinstance(grid[i][j], HeatGenerator) or isinstance(grid[i][j], Office) or isinstance(grid[i][j], ResearchLab) or isinstance(grid[i][j], Battery):
+                if isinstance(turkey_grid[i][j], EnergyConverter) or isinstance(turkey_grid[i][j], HeatGenerator) or isinstance(turkey_grid[i][j], Office) or isinstance(turkey_grid[i][j], ResearchLab) or isinstance(turkey_grid[i][j], Battery):
                     
                     for buildings in buy_menu:
-                        if buy_menu[buildings][0] == grid[i][j].name:
+                        if buy_menu[buildings][0] == turkey_grid[i][j].name:
                             window.blit(tile_images[buildings], rect)
                             # window.blit(tile_image, rect)
                             # window.blit(buy_menu[buildings][2],(i * TILE_SIZE+5, j * TILE_SIZE+5, TILE_SIZE, TILE_SIZE) )
 
-                else:
+                elif turkey_grid[i][j] == 1:
                     window.blit(tile_image, rect)
+                # else:
+                    
+                #     # window.blit(background_image, rect)
+    
+    
+    
+    
         
     # window.blit(converter_menu_images[1], (5, 5,50,50))
     
@@ -1544,5 +1617,5 @@ while running:
     clock.tick(FPS)
 
 # Quit pygame
-save_grid("save.json")
+# save_grid("save.json")
 pygame.quit()
