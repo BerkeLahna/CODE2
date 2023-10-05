@@ -1,13 +1,14 @@
 import pygame
 import threading
+import json
 
 
 # Player class
 class Player:
     def __init__(self):
         self.energy = 0
-        self.money = 1000000
-        self.research = 5000000
+        self.money = 10
+        self.research = 50
         self.max_energy = 200
 
     def buy_energy_generator(self, Building):
@@ -213,6 +214,7 @@ class Battery:
         self.battery_capacity = 200*upgrade*2
         self.cost = 5000
         self.name = name
+        self.tier = tier
         self.upgrade = upgrade
         
     def upgrade_production(self):
@@ -248,12 +250,12 @@ class Button():
             surface.blit(new_surface, (self.rect.x, self.rect.y))
 
         if self.text == "Tracker":
-            if 10 <= self.rect.y <= 201:
-                self.rect.move_ip(0, 0.159*-scroll_offset)
+            if 10 <= self.rect.y <= 400:
+                self.rect.move_ip(0, 0.334*-scroll_offset)
             elif  self.rect.y < 10: 
                 self.rect.y = 1 * SIDEBAR_ITEM_HEIGHT - 40
-            elif self.rect.y > 201:
-                self.rect.y = 201
+            elif self.rect.y > 400:
+                self.rect.y = 400
 
         else:  
             self.rect.move_ip(0, scroll_offset)
@@ -566,19 +568,87 @@ def number_format(number):
 #                 grid[i][j] = 0
 #     with open(filename, 'w') as f:
 #         json.dump(grid, f)
-     
+
+# Save the grid to a file
+
+def save_grid(filename):
+    player_dict = {"energy": player.energy, "money": player.money, "research": player.research, "max_energy": player.max_energy}
+    new_grid = {}
+    researches = []
+
+    for i in range(NUM_TILES_X):
+        for j in range(NUM_TILES_Y):
+            if grid[i][j] != TILE_EMPTY:
+                new_grid[f"{i},{j}"] = {"tile_type": grid[i][j].name, "tier": grid[i][j].tier, "upgrade": grid[i][j].upgrade}
+                
+    for i in range(len(buy_menu)):
+        researches.append(buy_menu[i+1][5])
+
+    data = {"player": player_dict, "grid": new_grid, "researches": researches}
+
+    with open(filename, 'w') as f:
+        json.dump(data, f)
+    print("saved")
 
 
+# Load the grid from a file
+def load_grid(filename,player,grid):
+    # Load the JSON data from the file
+    try:
+        with open(filename, 'r') as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        print("File not found")
+        return None
+    # for data in player_data:
+    #     player1 = Player(data["energy"], data["money"], data["research"], data["max_energy"])
+    player_data = data.get("player", {})
+    player.energy = player_data.get("energy", 0)
+    player.money = player_data.get("money", 0)
+    player.research = player_data.get("research", 0)
+    player.max_energy = player_data.get("max_energy", 0)
+    
+    researches = data.get("researches", {})
+    for i in range(len(buy_menu)):
+        research = list(buy_menu[i+1])
+        research[5] = researches[i]
+        buy_menu[i+1] = research
+    
+    
+    
+    
+    
+    grid_list = data.get("grid", {})
+    grid = [[TILE_EMPTY for j in range(NUM_TILES_Y)] for i in range(NUM_TILES_X)]
+    for key, value in grid_list.items():
+        i, j = key.split(",")
+        i, j = int(i), int(j)
+        print(i,j)
+        tile_type = value.get("tile_type", "")
+        tile_tier = value.get("tier", 1)
+        tile_upgrade = value.get("upgrade", 0)
+        for key, value in buy_menu.items():
+            if value[0] == tile_type:
+                grid[i][j] = buy_menu[key][1](tile_tier,tile_upgrade,tile_type)
+    return grid
 
-# load_grid("save.json")
+# class PlayerEncoder(json.JSONEncoder):
+#     def default(self, obj):
+#         if isinstance(obj, Player):
+#             return {"energy": obj.energy, "money": obj.money, "research": obj.research, "max_energy": obj.max_energy}
+#         else:
+#             return super().default(obj)
+
 
 
 
 # Tile constants
 TILE_SIZE = 50
 # NUM_TILES_X = 16  # Adjusted for the grid size
+# NUM_TILES_X = 16
+# NUM_TILES_Y = 12 
 NUM_TILES_X = 16
-NUM_TILES_Y = 12  # Adjusted for the grid size
+NUM_TILES_Y = 12 
 
 # Sidebar constants
 SIDEBAR_WIDTH = 500
@@ -651,7 +721,14 @@ grid = [[TILE_EMPTY for _ in range(NUM_TILES_Y)] for _ in range(NUM_TILES_X)]
 # offices = []
 # labs = []
 
-
+turkey_grid = [[0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 
+0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0,0,0,0,0], [0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
 
 
 # Sample prices for different tiers (you should replace these with your actual prices)
@@ -710,7 +787,8 @@ tile_images = {
     32: pygame.transform.scale(pygame.image.load('Data/dark.png'), (50,50))
 }
 
-
+background_image = pygame.transform.scale(pygame.image.load('Data/background.jpg'), (50, 50))
+# turkey_grid = pygame.transform.scale(pygame.image.load('Data/turkey_map.png'), (50, 50))
 
 converter_menu_images = {
     1: pygame.transform.scale(pygame.image.load('Data/generator1.png'), (40, 40)),
@@ -945,9 +1023,9 @@ current_offset=0
 
 
 offsets = {
-    "Buy": (0 , 1400),
-    "Research": (0 , 1350),
-    "Upgrade": (0 , 1560)
+    "Buy": (0 , 1200),
+    "Research": (0 , 1150),
+    "Upgrade": (0 , 1360)
 }
 
 
@@ -959,11 +1037,11 @@ offsets = {
 #DEFINE BUTTONS
 # buy_button1 = Button(WINDOW_WIDTH - SIDEBAR_WIDTH +15,7* SIDEBAR_ITEM_HEIGHT -55, 100, 30, 'Buy', lambda: print('Button clicked'))
 # upgrade_button1 = Button(WINDOW_WIDTH - SIDEBAR_WIDTH +300, 7* SIDEBAR_ITEM_HEIGHT -55, 100, 30, 'Upgrade', lambda: print('Button clicked'))
-upgrade_button1  = Button(WINDOW_WIDTH - SIDEBAR_WIDTH +300, 6* SIDEBAR_ITEM_HEIGHT -45, 100, 30, 'Upgrade', lambda: print('Button clicked'))
-buy_button1 = Button(WINDOW_WIDTH - SIDEBAR_WIDTH +15, 6* SIDEBAR_ITEM_HEIGHT -45, 100, 30, 'Buy', lambda: print('Button clicked'))
+upgrade_button1  = Button(WINDOW_WIDTH - SIDEBAR_WIDTH +300, 10* SIDEBAR_ITEM_HEIGHT -45, 100, 30, 'Upgrade', lambda: print('Button clicked'))
+buy_button1 = Button(WINDOW_WIDTH - SIDEBAR_WIDTH +15, 10* SIDEBAR_ITEM_HEIGHT -45, 100, 30, 'Buy', lambda: print('Button clicked'))
 testbutton = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, SIDEBAR_ITEM_HEIGHT , 100, 30, 'Buy')
-delete_multiple_button = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 161, 7* SIDEBAR_ITEM_HEIGHT -55 , 100, 30, 'X')
-research_button = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 161, 6* SIDEBAR_ITEM_HEIGHT -45, 100, 30, 'Research')
+delete_multiple_button = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 161, 11* SIDEBAR_ITEM_HEIGHT -55 , 100, 30, 'X')
+research_button = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 161, 10* SIDEBAR_ITEM_HEIGHT -45, 100, 30, 'Research')
 convert_button = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, WINDOW_HEIGHT - 200, 200 , 30, 'Convert Energy To Money', lambda: print('Button clicked'),(125, 200, 125))
 # menu_button1  = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, 1 * SIDEBAR_ITEM_HEIGHT - 40, 450, 50)
 # menu_button2  = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, 2 * SIDEBAR_ITEM_HEIGHT - 40, 450, 50)
@@ -1026,8 +1104,8 @@ map_y_max = 300
 
 
 switch_view("Buy",current_tier)
-
-
+grid = load_grid("save.json",player,grid)
+save_buildings= []
 
 
 while running:
@@ -1109,7 +1187,7 @@ while running:
                             print(selected_research)
                             # research_cost = buy_menu[selected_research][1](buy_menu[selected_research][4],buy_menu[selected_research][3],buy_menu[selected_research][0])
                             research_cost = research_costs[selected_research-2]
-                            if  player.research >= research_cost and selected_research < 33:
+                            if  buy_menu[selected_research][5] == False and player.research >= research_cost and selected_research < 33:
                                 player.research-=research_cost
                                 object_list = list(buy_menu[selected_research])
                                 object_list[5] = True
@@ -1118,7 +1196,7 @@ while running:
                                 building_researchable = True
                                 break
 
-                            elif  building_researchable and player.research < research_cost.cost :
+                            elif buy_menu[selected_research][5] == False and player.research < research_cost :
                                 print("not enough research")
                                 confirmation_window(not_enough_research,ok_text)
                                 break
@@ -1299,15 +1377,21 @@ while running:
     # continent = pygame.Surface((WINDOW_WIDTH - SIDEBAR_WIDTH, WINDOW_HEIGHT))
 
     
-    pygame.draw.rect(window, (0, 105, 148), (0 , 0, WINDOW_WIDTH - SIDEBAR_WIDTH, WINDOW_HEIGHT)) 
+    # pygame.draw.rect(window, (0, 105, 148), (0 , 0, WINDOW_WIDTH - SIDEBAR_WIDTH, WINDOW_HEIGHT)) 
+    background_surface = pygame.Surface((WINDOW_WIDTH - SIDEBAR_WIDTH, WINDOW_HEIGHT))
+    for x in range(0, WINDOW_WIDTH - SIDEBAR_WIDTH, 50):
+        for y in range(0, WINDOW_HEIGHT, 50):
+            background_surface.blit(background_image, (x, y))
+    window.blit(background_surface, (0,0,WINDOW_WIDTH - SIDEBAR_WIDTH ,WINDOW_HEIGHT))
+
 
     tile_image = pygame.transform.scale(pygame.image.load('Data/tile2.jpg'), (50, 50))
+    
 
     if dragging :
        # Draw tiles and objects
         for i in range(NUM_TILES_X):
             for j in range(NUM_TILES_Y):
-                print("dragging",mouse_pos[0]-x_offset)
                 rect = pygame.Rect(i * TILE_SIZE+(mouse_pos[0]-x_offset if mouse_pos[0]-x_offset< 400  and mouse_pos[0]-x_offset> 0 else (400 if mouse_pos[0]-x_offset > 0 else 0)) , j * TILE_SIZE+(mouse_pos[1]-y_offset if mouse_pos[1]-y_offset < 400  and mouse_pos[1]-y_offset> 0 else (400 if mouse_pos[1]-y_offset > 0 else 0)), TILE_SIZE, TILE_SIZE)
                 if isinstance(grid[i][j], EnergyConverter) or isinstance(grid[i][j], HeatGenerator) or isinstance(grid[i][j], Office) or isinstance(grid[i][j], ResearchLab) or isinstance(grid[i][j], Battery):
                     
@@ -1372,10 +1456,13 @@ while running:
     pygame.draw.rect(window, (GRAY), (WINDOW_WIDTH - SIDEBAR_WIDTH+460, 10,15 , WINDOW_HEIGHT)) 
     
     #bottom area
-    pygame.draw.rect(window, (0, 105, 148), (WINDOW_WIDTH - SIDEBAR_WIDTH, 5 * SIDEBAR_ITEM_HEIGHT - 40, SIDEBAR_WIDTH , WINDOW_HEIGHT-  SIDEBAR_ITEM_HEIGHT - 40)) 
+    pygame.draw.rect(window, (0, 105, 148), (WINDOW_WIDTH - SIDEBAR_WIDTH, 9 * SIDEBAR_ITEM_HEIGHT - 40, SIDEBAR_WIDTH , WINDOW_HEIGHT-  SIDEBAR_ITEM_HEIGHT - 40)) 
+    
+    
+    
     switch_view(state,current_tier)
     # pygame.draw.rect(window, (0, 105, 148), scroll_bar_rect)
-    window.blit(menu_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 170, 5* SIDEBAR_ITEM_HEIGHT -30))
+    window.blit(menu_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 170, 9* SIDEBAR_ITEM_HEIGHT -30))
 
 
 
@@ -1457,5 +1544,5 @@ while running:
     clock.tick(FPS)
 
 # Quit pygame
-# save_grid("save.json")
+save_grid("save.json")
 pygame.quit()
