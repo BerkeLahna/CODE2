@@ -1,0 +1,26 @@
+Major:
+Fix HeatGenerator Upgrades:✔, Bruh, Fixed Maybe 
+- Upgrading any HeatGenerator fucks shit up (probably upgrades all instances of HeatGenerators)✔, Bruh, Fixed Maybe
+
+Fix batterries:✔
+- Max energy stays after selling battery✔
+- Battery upgrade wont affect placed batteries✔
+
+Fix EnergyConverter:✔
+- Both upgrades do the same as of now✔
+- Only takes highest heat into account (out of every side)
+
+Balancing:
+- Higher tier prices too low -
+- Research lab could be faster
+- Upgrades are too cheap at lower levels
+
+- Add Prestige (Low importance, but highly necessary) 4x bonus
+
+Minor:
+- Multithread Confirmation Window
+- Fix dragging when clicked on building ✔
+- Currency fonts are on top of each other
+- Faster way to place and destroy multiple buildings ✔
+- Region Cost Scaling
+- Region Button Smoothing (Styling)

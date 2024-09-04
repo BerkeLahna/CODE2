@@ -1,281 +1,55 @@
 import pygame
 import threading
 import json
+import random
+from button_file import Button
+from player import Player
+from heatGenerator import HeatGenerator
+from energyConverter import EnergyConverter
+from office import Office
+from researchLab import ResearchLab
+from battery import Battery
+from objects import *
 
+# from turkey_grid import turkey_grid
+def unlock_region(grid, region, region_cost):
+    font = pygame.font.Font(None, 36)
+    if player.money >= region_cost:
+        
+            confirmation_text = font.render(f"  Do you want to unlock this region for {number_format(region_cost)} money?  ", True, (0, 0, 0))
+            
+            yes_text = font.render("Yes", True, (0, 0, 0))
+            no_text = font.render("No", True, (0, 0, 0))
+                
+            confirmation = confirmation_window(confirmation_text,yes_text,no_text)
+            if confirmation:
+                player.money -= region_cost
+                new_region = (region[0], region[1], False)
+                index = regions.index(region)
+                regions[index] = new_region    
+                for row in range(region[0].start, region[0].stop):
+                    for col in range(region[1].start, region[1].stop):
+                        if grid[row][col] == TILE_CLOUDY:
+                            grid[row][col] = TILE_EMPTY
+                return True
+            else: 
+                return False
 
-# Player class
-class Player:
-    def __init__(self):
-        self.energy = 0
-        self.money = 10
-        self.research = 50
-        self.max_energy = 200
-
-    def buy_energy_generator(self, Building):
-        if self.money >= Building.cost:
-            self.money -= Building.cost
-            return True
+    else:            
+        confirmation_window(not_enough_money_text,ok_text)
         return False
-
-    def enough_money(self, Building):
-        if self.money >= Building.cost:
-            return True
-        return False
-
-    def buy_research(self, cost):
-        if self.research >= cost.cost:
-            self.research -= cost.cost
-            return True
-        return False
+   
     
-    def buy_upgrade(self, cost):
-        if self.money >= cost:
-            self.money -= cost
-            return True
-        return False
-
-    def generate_energy(self, amount):
-        if self.energy + amount <= self.max_energy:
-            self.energy += amount
-        else :
-            self.energy = self.max_energy
-
-    def sell_energy(self, amount):
-        if self.energy >= amount:
-            self.energy -= amount
-            self.money += amount * 2  # Assuming 1 energy = 2 money
-            return True
-        return False
-    def sell_building(self, Building):
-       
-        font = pygame.font.Font(None, 36)
-        confirmation_text = font.render(f"  Do you want to sell this building for {Building.cost} money?  ", True, (0, 0, 0))
-        confirmation_rect = confirmation_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
-        
-        # Draw the confirmation box
-        pygame.draw.rect(window, (200, 200, 200), confirmation_rect)
-        pygame.draw.rect(window, (0, 0, 0), confirmation_rect, 2)
-        window.blit(confirmation_text, confirmation_rect)
-        
-        yes_button_rect = pygame.Rect(WINDOW_WIDTH // 2 - 70, WINDOW_HEIGHT // 2 + 40, 60, 40)
-        no_button_rect = pygame.Rect(WINDOW_WIDTH // 2 + 20, WINDOW_HEIGHT // 2 + 40, 60, 40)
-        
-        pygame.draw.rect(window, (0, 255, 0), yes_button_rect)
-        pygame.draw.rect(window, (255, 0, 0), no_button_rect)
-        
-        yes_text = font.render("Yes", True, (0, 0, 0))
-        no_text = font.render("No", True, (0, 0, 0))
-        
-        window.blit(yes_text, (yes_button_rect.x + 10, yes_button_rect.y + 5))
-        window.blit(no_text, (no_button_rect.x + 15, no_button_rect.y + 5))
-        
-        pygame.display.flip()
-        while True:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    exit()
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    mouse_pos = pygame.mouse.get_pos()
-                    if yes_button_rect.collidepoint(mouse_pos):
-                        self.money += Building.cost
-                        return True
-                    elif no_button_rect.collidepoint(mouse_pos):
-                        return False
-  
-    def sell_multiple_buildings(self, Building_grid):
-        total_cost = 0
-        for Building in Building_grid:
-                if Building is not None:
-                    total_cost += Building.cost
-        
-        font = pygame.font.Font(None, 36)
-        confirmation_text = font.render(f"  Do you want to sell these buildings for {(total_cost if total_cost != None else None)} money?  ", True, (0, 0, 0))
-        yes_text = font.render("Yes", True, (0, 0, 0))
-        no_text = font.render("No", True, (0, 0, 0))
-      
-      
-      
-      
-        if(confirmation_window(confirmation_text,yes_text,no_text)):
-            self.money += total_cost
-            return True
-        else:
-            return False
-
-# HeatGenerator class
-class HeatGenerator:
-    def __init__(self, tier,upgrade,name):
-        self.cost = 1000 * (4 ** (tier - 1)) * (tier - 1) + (10 if tier == 1 else 0)
-        self.heat_per_tick = 1*tier*upgrade*1.50/120 *(100 ** (tier - 1))
-        # self.life_cycle = 600
-        self.tier = tier
-        self.name = name
-        self.upgrade = upgrade
-        
-    def generate_heat(self):
+   
         
         
-          
-        if (self.tier > 1):
-
-            return self.heat_per_tick
-        else:
-
-            player.generate_energy(self.heat_per_tick)
-
-            return 0
-        
-        
-        # if self.life_cycle == 0:
-        #     handle_destruction(self)
-            
-        #     return 0
-        
-        # if (self.tier > 1):
-        #     self.life_cycle -=1
-        #     return self.heat_per_tick
-        # else:
-
-        #     player.generate_energy(self.heat_per_tick)
-        #     self.life_cycle -=1
-        #     return 0
-            
-            
-    def upgrade_production(self):
-        self.heat_per_tick *= 1.5
-          
-
-class EnergyConverter:
-    def __init__(self, tier, upgrade,name):
-        self.cost = 2000 * (12 ** (tier - 1)) 
-        self.tier = tier
-        self.upgrade = upgrade
-
-        self.max_heat = 10*tier*upgrade*2*(100 ** (tier - 1))
-        self.heat_conversion_per_second = 1*tier*upgrade*1.25*(100 ** (tier - 1))
-        self.stored_heat = 0
-        self.name = name
-
-    def convert_heat(self, heat):
-
-        if heat <= self.heat_conversion_per_second:
-          player.generate_energy(heat)
-
-        else:
-            if self.stored_heat + heat < self.max_heat:
-                player.generate_energy(heat)
-                self.stored_heat += heat
-            else:
-                handle_destruction(self)
-        
-    def upgrade_production(self):
-        self.heat_conversion_per_second *= 1.25
-
-
-class Office:
-    def __init__(self,tier,upgrade,name):
-        self.energy_sell_rate = 1*tier*upgrade*1.5 *(100 ** (tier - 1)) # Energy selling rate for the office (per second)
-        self.cost = 10000 * (4 ** (tier - 1)) 
-        self.tier = tier
-        self.name = name
-        self.upgrade = upgrade
-
-    def sell_energy(self, player):
-        # Sell energy at the defined rate
-        if player.energy >= self.energy_sell_rate:
-            player.energy -= self.energy_sell_rate 
-            player.money += self.energy_sell_rate  # Assuming 1 energy = 10 money
-        elif player.energy > 0:
-            player.money += player.energy *2
-            player.energy = 0
-            
-            
-    def upgrade_production(self):
-        self.energy_sell_rate *= 1.5
-
-class ResearchLab:
-    def __init__(self,tier,upgrade,name):
-        self.research_rate = 1*tier*upgrade*1.5  *(100 ** (tier - 1))
-        self.cost = 500 * (160 ** (tier - 1))  
-        self.tier = tier
-        self.name = name
-        self.upgrade = upgrade
-
-    def research(self, player):
-            player.research += self.research_rate/60
-            
-    def upgrade_production(self):
-        self.research_rate *= 1.5
-
-        
-class Battery:
-    def __init__(self,tier,upgrade,name):
-        self.battery_capacity = 200*upgrade*2
-        self.cost = 5000
-        self.name = name
-        self.tier = tier
-        self.upgrade = upgrade
-        
-    def upgrade_production(self):
-        self.battery_capacity *= 2
+    print("TESTING TESTINGGG")
     
-
-            
-class Button():
-    def __init__(self, x, y, width,height, text='', command=None, color=(0,80,200), image=None):
-        self.rect = pygame.Rect(x, y, width, height)
-        self.text = text
-        self.font = pygame.font.Font(None, 22)
-        self.command = command
-        self.color = color
-        self.image = image
-        self.width = width
-        self.height = height
-        self.y = y
-        
-    def draw(self, surface):
-        pygame.draw.rect(surface,self.color, self.rect)
-        if self.text and not self.image and not self.text == "Tracker":
-            text = self.font.render(self.text, True, (255, 255, 255))
-            text_rect = text.get_rect(center=self.rect.center)
-            surface.blit(text, text_rect)
-
-        elif self.text and self.image :
-            text = self.font.render(self.text, True, (255, 255, 255))
-            new_surface = pygame.Surface((self.width,self.height),pygame.SRCALPHA)
-            new_surface.blit(self.image, (5, 5))
-            new_surface.blit(text, (self.image.get_width()+20, 16))
-            pygame.draw.rect(new_surface, (0, 0, 0), (0, 0, self.width,self.height), 1)
-            surface.blit(new_surface, (self.rect.x, self.rect.y))
-
-        if self.text == "Tracker":
-            if 10 <= self.rect.y <= 400:
-                self.rect.move_ip(0, 0.334*-scroll_offset)
-            elif  self.rect.y < 10: 
-                self.rect.y = 1 * SIDEBAR_ITEM_HEIGHT - 40
-            elif self.rect.y > 400:
-                self.rect.y = 400
-
-        else:  
-            self.rect.move_ip(0, scroll_offset)
-        
-                
-                
-
-
-    def handle_event(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(event.pos):
-            if self.command:
-                self.command()
-                
-    def button_update(self, text=None, image=None):
-
-
-
-        self.text = text
-        self.image = image
-
+def unlock_all_research():
+    for i in range(len(buy_menu)):
+        research = list(buy_menu[i+1])
+        research[5] = True
+        buy_menu[i+1] = research
 
                 
 def tab_change(current_offset):
@@ -286,12 +60,13 @@ def tab_change(current_offset):
 
     
 def handle_destruction(building):
-    for i in range(NUM_TILES_X):
-        for j in range(NUM_TILES_Y):
+    explosion_sound.play()
+    for i in range(len(grid)):
+        for j in range(len(grid[i])):
             if grid[i][j] == building:
                 grid[i][j] = TILE_EMPTY
-                x = i * TILE_SIZE
-                y = j * TILE_SIZE
+                x = i * TILE_SIZE + move_x
+                y = j * TILE_SIZE + move_y
                 explosion_delay = 100
                 last_explosion_time = pygame.time.get_ticks()
                 explosion_frame = 1
@@ -308,38 +83,43 @@ def handle_destruction(building):
                     pygame.display.update(x,y,TILE_SIZE,TILE_SIZE)
                 return 0
      
-# def render_grid_movement(grid):    
-#     for row in range(len(grid)):
-#         for col in range(len(grid[0])):
-#             cell_value = grid[row][col]
-#             x = col * TILE_SIZE - camera_x
-#             y = row * TILE_SIZE - camera_y
-#             pygame.draw.rect(window, (255, 255, 255), (x, y, TILE_SIZE, TILE_SIZE), 1)
+
 
 def confirmation_window(confirmation_text,yes_text=None,no_text=None):    
         
         
         
     confirmation_rect = confirmation_text.get_rect(center=(WINDOW_WIDTH // 2+10, WINDOW_HEIGHT // 2+10))
-    confirmation_rect.inflate_ip(0, 5) # increase the size of the rectangle by 50 pixels in both directions
+    confirmation_rect.inflate_ip(0, 15) # increase the size of the rectangle by 50 pixels in both directions
     
     # Draw the confirmation box
-    pygame.draw.rect(window, (200, 200, 200), confirmation_rect)
-    pygame.draw.rect(window, (0, 0, 0), confirmation_rect, 2)
-    window.blit(confirmation_text, confirmation_rect)
+    pygame.draw.rect(window, (41, 196, 170), confirmation_rect,border_radius = 10)
+    pygame.draw.rect(window, (0, 0, 0), confirmation_rect, 2,border_radius = 10)
+    text_x = confirmation_rect.centerx - confirmation_text.get_width() // 2
+    text_y = confirmation_rect.centery - confirmation_text.get_height() // 2
+    window.blit(confirmation_text, (text_x, text_y))
     
     if  yes_text != None and no_text == None:
-        yes_button_rect = pygame.Rect(WINDOW_WIDTH // 2 -25, WINDOW_HEIGHT // 2 +25, 80, 35)
-        pygame.draw.rect(window, (0, 255, 0), yes_button_rect)
-        window.blit(yes_text, (yes_button_rect.x + 20, yes_button_rect.y + 8))
+        yes_button_rect = pygame.Rect(WINDOW_WIDTH // 2 -30, WINDOW_HEIGHT // 2 +30, 80, 30)
+        pygame.draw.rect(window, (0, 255, 0), yes_button_rect,border_radius = 10)
+        text_x = yes_button_rect.centerx - yes_text.get_width() // 2
+        text_y = yes_button_rect.centery - yes_text.get_height() // 2
+        window.blit(yes_text,  (text_x, text_y))
+        
+        # yes_button = Button(WINDOW_WIDTH // 2 -25, WINDOW_HEIGHT // 2 +25, 80, 35, 'Yees', lambda: "test123",(0, 255, 0) ,border_radius = 10)
+        # yes_button.draw(window,scroll_offset)
+
+        
     elif yes_text != None:
         yes_button_rect = pygame.Rect(WINDOW_WIDTH // 2 - 70, WINDOW_HEIGHT // 2 + 40, 60, 40)
-        pygame.draw.rect(window, (0, 255, 0), yes_button_rect)
+        pygame.draw.rect(window, (0, 255, 0), yes_button_rect,border_radius = 10)
         window.blit(yes_text, (yes_button_rect.x + 10, yes_button_rect.y + 5))
+        # yes_button = Button(WINDOW_WIDTH // 2 -25, WINDOW_HEIGHT // 2 +25, 80, 35, 'Yees', lambda: "test123",(0, 255, 0),border_radius = 10)
+        # yes_button.draw(window,scroll_offset)
 
     if no_text != None:
         no_button_rect = pygame.Rect(WINDOW_WIDTH // 2 + 20, WINDOW_HEIGHT // 2 + 40, 60, 40)
-        pygame.draw.rect(window, (255, 0, 0), no_button_rect)
+        pygame.draw.rect(window, (255, 0, 0), no_button_rect,border_radius = 10)
         window.blit(no_text, (no_button_rect.x + 15, no_button_rect.y + 5))
 
     
@@ -350,19 +130,33 @@ def confirmation_window(confirmation_text,yes_text=None,no_text=None):
 
     
     pygame.display.flip()  
+    frame_count=0
+    start_time = pygame.time.get_ticks()
 
     while True:
+        elapsed_time = (pygame.time.get_ticks() - start_time) / 1000.0
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
-                if yes_button_rect.collidepoint(mouse_pos):
+                if yes_button_rect.collidepoint(mouse_pos) :
+                    print("Skipped ",int(elapsed_time/0.250)/4," seconds")
+                    time_skip(int(elapsed_time/0.250))
                     return True
                 elif no_text != None and no_button_rect.collidepoint(mouse_pos):
+                    time_skip(int(elapsed_time/0.250))
                     return False
-            
+        
+       
+        frame_count += 1  # Increment the frame counter
+        if frame_count >= 60 and no_text == None:  # Check if 60 frames have passed
+            time_skip(4)
+            return False
+        pygame.time.delay(16)
+        
 def switch_view(state, tier):
 
     
@@ -370,9 +164,13 @@ def switch_view(state, tier):
     
         
         menu_text = font.render("Buy Menu",True,(255,255,255))
+        window.blit(menu_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 210, 9* SIDEBAR_ITEM_HEIGHT -30))
 
         for i in buy_menu:
-            menu_button_list[i-1].button_update(text=f'{buy_menu[i][0]} (${number_format(buy_menu[i][1](buy_menu[i][4],1,buy_menu[i][0]).cost)})', image = pygame.transform.scale(tile_images[i],(40,40)))
+            if buy_menu[i][5] == False:
+                menu_button_list[i-1].button_update(text=f'{buy_menu[i][0]} (${number_format(buy_menu[i][1](buy_menu[i][4],1,buy_menu[i][0]).cost)}) (Not Researched)',color=(0,80,120), image = pygame.transform.scale(tile_images[i],(40,40)))
+            else:
+                menu_button_list[i-1].button_update(text=f'{buy_menu[i][0]} (${number_format(buy_menu[i][1](buy_menu[i][4],1,buy_menu[i][0]).cost)})' ,image = pygame.transform.scale(tile_images[i],(40,40)))
 
  
          
@@ -388,43 +186,49 @@ def switch_view(state, tier):
                 building_index.append(key)
         
 
-        menu_button_list[0].button_update(text=f'{buy_menu[1][0]}: Increase Production by %50 (${number_format(upgrade_costs[0])})', image = pygame.transform.scale(tile_images[1],(40,40)))
-        menu_button_list[1].button_update(text=f'{buy_menu[1][0]}: Increase Lifetime by %100 (${number_format(upgrade_costs[1])})', image = pygame.transform.scale(tile_images[1],(40,40)))
-        menu_button_list[2].button_update(text=f'Research Center: Increase Research Rate by %25 (${number_format(upgrade_costs[2])})', image = pygame.transform.scale(tile_images[2],(40,40)))
-        menu_button_list[3].button_update(text=f'Office: Increase Sell Rate by %50 (${number_format(upgrade_costs[3])})', image = pygame.transform.scale(tile_images[4],(40,40)))
-        menu_button_list[4].button_update(text=f'Battery: Increase Max Energy by %100 (${number_format(upgrade_costs[4])})', image = pygame.transform.scale(tile_images[3],(40,40)))
-        menu_button_list[5].button_update(text=f'Generator: Increase Max Heat %100 (${number_format(upgrade_costs[5])})', image = pygame.transform.scale(tile_images[6],(40,40)))
-        menu_button_list[6].button_update(text=f'Generator: Increase Conversion Rate by %25 (${number_format(upgrade_costs[6])})', image = pygame.transform.scale(tile_images[6],(40,40)))
+        # menu_button_list[0].button_update(text=f'{buy_menu[1][0]}: Increase Production by %50 (${number_format(upgrade_costs[0])})', image = pygame.transform.scale(tile_images[1],(40,40)))
+        # menu_button_list[1].button_update(text=f'{buy_menu[1][0]}: Increase Lifetime by %100 (${number_format(upgrade_costs[1])})', image = pygame.transform.scale(tile_images[1],(40,40)))
+        # menu_button_list[2].button_update(text=f'Research Center: Increase Research Rate by %25 (${number_format(upgrade_costs[2])})', image = pygame.transform.scale(tile_images[2],(40,40)))
+        # menu_button_list[3].button_update(text=f'Office: Increase Sell Rate by %50 (${number_format(upgrade_costs[3])})', image = pygame.transform.scale(tile_images[4],(40,40)))
+        # menu_button_list[4].button_update(text=f'Battery: Increase Max Energy by %100 (${number_format(upgrade_costs[4])})', image = pygame.transform.scale(tile_images[3],(40,40)))
+        # menu_button_list[5].button_update(text=f'Generator: Increase Max Heat %100 (${number_format(upgrade_costs[5])})', image = pygame.transform.scale(tile_images[6],(40,40)))
+        # menu_button_list[6].button_update(text=f'Generator: Increase Conversion Rate by %25 (${number_format(upgrade_costs[6])})', image = pygame.transform.scale(tile_images[6],(40,40)))
+        menu_button_list[0].button_update(text=f'{buy_menu[1][0]}: Production +%50 (${number_format(upgrade_costs[0])})', image = pygame.transform.scale(tile_images[1],(40,40)))
+        menu_button_list[1].button_update(text=f'{buy_menu[1][0]}: Lifetime +%100 (${number_format(upgrade_costs[1])})', image = pygame.transform.scale(tile_images[1],(40,40)))
+        menu_button_list[2].button_update(text=f'Research Center: Research Rate +%25 (${number_format(upgrade_costs[2])})', image = pygame.transform.scale(tile_images[2],(40,40)))
+        menu_button_list[3].button_update(text=f'Office: Sell Rate +%50 (${number_format(upgrade_costs[3])})', image = pygame.transform.scale(tile_images[4],(40,40)))
+        menu_button_list[4].button_update(text=f'Battery: Max Energy +%100 (${number_format(upgrade_costs[4])})', image = pygame.transform.scale(tile_images[3],(40,40)))
+        menu_button_list[5].button_update(text=f'Generator: Max Heat +%100 (${number_format(upgrade_costs[5])})', image = pygame.transform.scale(tile_images[6],(40,40)))
+        menu_button_list[6].button_update(text=f'Generator: Conversion Rate +%25 (${number_format(upgrade_costs[6])})', image = pygame.transform.scale(tile_images[6],(40,40)))
 
 
         del building_index[0]
 
         i = 7
         for key in building_index:
-            menu_button_list[i].button_update(text=f'{buy_menu[key][0]}: Increase Production by %50 (${number_format(upgrade_costs[i])})', image = pygame.transform.scale(tile_images[key],(40,40)))
-            menu_button_list[i+1].button_update(text=f'{buy_menu[key][0]}: Increase Lifetime by %100 (${number_format(upgrade_costs[i+1])})', image = pygame.transform.scale(tile_images[key],(40,40)))
+            menu_button_list[i].button_update(text=f'{buy_menu[key][0]}: Production +%50 (${number_format(upgrade_costs[i])})', image = pygame.transform.scale(tile_images[key],(40,40)))
+            menu_button_list[i+1].button_update(text=f'{buy_menu[key][0]}: Lifetime +%100 (${number_format(upgrade_costs[i+1])})', image = pygame.transform.scale(tile_images[key],(40,40)))
+            
+
             i+=2
         menu_text = font.render("Upgrade Menu",True,(255,255,255))
+        window.blit(menu_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 195, 9* SIDEBAR_ITEM_HEIGHT -30))
+
+      
+      
+      
+      
+      
+      
+      
         
-      
-      
-      
-      
-      
-      
-      
-        # 0 1 (23456) 7 8 ..... 35
-
-        # for i in buy_menu:
-        #     if buy_menu[i][1] == HeatGenerator:
-        #         menu_button_list[i-1].button_update(text=f'{buy_menu[i][0]} Increase Production by %50 (${number_format(buy_menu[i][1](buy_menu[i][4],1,buy_menu[i][0]).cost)})', image = pygame.transform.scale(tile_images[i],(40,40)))
-        #         menu_button_list[i].button_update(text=f'{buy_menu[i][0]} Increase Lifetime by %100 (${number_format(buy_menu[i][1](buy_menu[i][4],1,buy_menu[i][0]).cost)})', image = pygame.transform.scale(tile_images[i],(40,40)))
-
 
 
     elif state == "Research":
         
         menu_text = font.render("Research Menu",True,(255,255,255))
+        window.blit(menu_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 195, 9* SIDEBAR_ITEM_HEIGHT -30))
+
         # menu_button_list[0].button_update(text=f'{buy_menu[2][0]} (${buy_menu[2][1](buy_menu[2][4],1,buy_menu[2][0]).cost*2})', image = pygame.transform.scale(tile_images[2],(40,40)))
 
         for i in range(len(buy_menu)-1):
@@ -438,27 +242,26 @@ def switch_view(state, tier):
         menu_button_list[31].button_update()
  
           
-    energy_gen_thread = threading.Thread(target=energy_gen)
-    energy_gen_thread.start()
-
+    # energy_gen_thread = threading.Thread(target=energy_gen)
+    # energy_gen_thread.start()
 # Create two threads
  
 def energy_gen():
     if grid != None:
-        for i in range(NUM_TILES_X):
-            for j in range(NUM_TILES_Y):
+        for i in range(len(grid)):
+            for j in range(len(grid[i])):
                 if isinstance(grid[i][j], HeatGenerator) and grid[i][j].tier != 1:
                     # Generate heat in adjacent tiles
-                    if i+1 < NUM_TILES_X and isinstance(grid[i+1][j], EnergyConverter):
-                        grid[i+1][j].convert_heat(grid[i][j].generate_heat())
+                    if i+1 < 1200 and isinstance(grid[i+1][j], EnergyConverter):
+                        grid[i+1][j].convert_heat(grid[i][j].generate_heat(player),player,handle_destruction)
                     if i-1 >= 0 and isinstance(grid[i-1][j], EnergyConverter):
-                        grid[i-1][j].convert_heat(grid[i][j].generate_heat())
-                    if j+1 < NUM_TILES_Y and isinstance(grid[i][j+1], EnergyConverter):
-                        grid[i][j+1].convert_heat(grid[i][j].generate_heat())
+                        grid[i-1][j].convert_heat(grid[i][j].generate_heat(player),player,handle_destruction)
+                    if j+1 < 800 and isinstance(grid[i][j+1], EnergyConverter):
+                        grid[i][j+1].convert_heat(grid[i][j].generate_heat(player),player,handle_destruction)
                     if  j-1 >= 0 and isinstance(grid[i][j-1], EnergyConverter):
-                        grid[i][j-1].convert_heat(grid[i][j].generate_heat())
+                        grid[i][j-1].convert_heat(grid[i][j].generate_heat(player),player,handle_destruction)
                 elif isinstance(grid[i][j], HeatGenerator) and grid[i][j].tier == 1 :
-                    grid[i][j].generate_heat()
+                    grid[i][j].generate_heat(player)
 
 
 #     energy_gen_thread = threading.Thread(target=refresh_display)
@@ -467,22 +270,40 @@ def energy_gen():
 #     pygame.display.flip()
 
 
-def research_check(building,index,state):
+def sell_building(Building):
     
-    return state
-
+    font = pygame.font.Font(None, 36)
+    confirmation_text = font.render(f"  Do you want to sell this building for {number_format(Building.cost)} money?  ", True, (0, 0, 0))
     
+   
+    yes_text = font.render("Yes", True, (0, 0, 0))
+    no_text = font.render("No", True, (0, 0, 0))
+    
+    
+    confirmation = confirmation_window(confirmation_text,yes_text,no_text)
+    
+    if confirmation:
+        player.money += Building.cost
+        if isinstance(Building, Battery):
+            player.max_energy -= Building.battery_capacity
+            Building.battery_capacity = 0
+        return True
+    else: 
+        return False
     
     
 def delete_mult():
-                     
+    dragging2 = False        
     selected_tiles = []
     x_of_building =[]
     y_of_building =[]
     delete_multiple_mode = True
-    font1 = pygame.font.Font(None, 26)
-    label_text = font1.render('Select Buildings To Sell, Right Click To Sell Or Cancel', True, (255, 0, 0), (0, 0, 0))
-    window.blit(label_text, ((WINDOW_WIDTH - SIDEBAR_WIDTH)/5 , 8* SIDEBAR_ITEM_HEIGHT -10 ))
+    font1 = pygame.font.Font(None, 40)
+    label_text = font1.render('SELLING MULTIPLE BUILDINGS', True, (255, 0, 0), (0, 0, 0))
+    window.blit(label_text, ((WINDOW_WIDTH - SIDEBAR_WIDTH)/3 ,0))
+
+    label_text1 = font1.render('Select Buildings To Sell, Right Click To Sell Or Cancel', True, (255, 0, 0), (0, 0, 0))
+    window.blit(label_text1, ((WINDOW_WIDTH - SIDEBAR_WIDTH)/5 , WINDOW_HEIGHT-label_text1.get_height() ))
     pygame.display.flip()
 
     while delete_multiple_mode:
@@ -490,29 +311,43 @@ def delete_mult():
             if event.type == pygame.QUIT:
                 running = False
                 delete_multiple_mode = False
+                pygame.quit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_pos = pygame.mouse.get_pos()
-                grid_x = (mouse_pos[0]-move_x) // TILE_SIZE
-                grid_y = (mouse_pos[1]-move_y) // TILE_SIZE
-                if event.button == 1 and (0 <= grid_x < NUM_TILES_X*TILE_SIZE+move_x and 0 <= grid_y < NUM_TILES_Y*TILE_SIZE+move_y) and grid[grid_x][grid_y] != TILE_EMPTY:  # Left click
-                    if (grid[grid_x][grid_y] not in selected_tiles):
-                        x_of_building.append(grid_x)
-                        print(grid_x, grid_y)
-                        y_of_building.append(grid_y)
-                        selected_tiles.append((grid[grid_x][grid_y]))
-                        rect = pygame.Rect(grid_x * TILE_SIZE+move_x, grid_y * TILE_SIZE+move_y, TILE_SIZE, TILE_SIZE)
-                        pygame.draw.rect(window, HIGHLIGHT_COLOR, rect, 2) # the last parameter is the thickness of the border
-                        pygame.display.flip()
-                        # pygame.display.update(rect)
+                if event.button == 1:
+                    dragging2 = True
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:
 
+                    dragging2 = False
 
-                elif event.button == 3:  # Right click
+                if event.button == 3:  # Right click
                     # Cancel selection
+                    dragging2 = False
                     delete_multiple_mode = False
-    if(selected_tiles != [] and player.sell_multiple_buildings(selected_tiles)):
+        if dragging2:
+            mouse_pos = pygame.mouse.get_pos()
+            grid_x = (mouse_pos[0]-move_x) // TILE_SIZE
+            grid_y = (mouse_pos[1]-move_y) // TILE_SIZE
+            if (0 <= grid_x < len(grid)*TILE_SIZE+move_x and 0 <= grid_y < len(grid[grid_x])*TILE_SIZE+move_y) and grid[grid_x][grid_y] != TILE_EMPTY and grid[grid_x][grid_y] != TILE_OCEAN and grid[grid_x][grid_y] != TILE_CLOUDY:  # Left click
+                if (grid[grid_x][grid_y] not in selected_tiles):
+                    x_of_building.append(grid_x)
+                    print(grid_x, grid_y)
+                    y_of_building.append(grid_y)
+                    selected_tiles.append((grid[grid_x][grid_y]))
+                    rect = pygame.Rect(grid_x * TILE_SIZE+move_x, grid_y * TILE_SIZE+move_y, TILE_SIZE, TILE_SIZE)
+                    pygame.draw.rect(window, HIGHLIGHT_COLOR, rect, 2,border_radius = 10) # the last parameter is the thickness of the border
+                    pygame.display.flip()
+                # pygame.display.update(rect)
+                    
+    confirmation_text_object = player.sell_multiple_buildings(selected_tiles)
+    if(selected_tiles != [] and confirmation_window(confirmation_text_object[0],confirmation_text_object[1],confirmation_text_object[2]) ):
         print(selected_tiles)
         for i in range(len(selected_tiles)):
+            player.money += selected_tiles[i].cost
             grid[x_of_building[i]][y_of_building[i]] = TILE_EMPTY
+
+#delete_mult_thread = threading.Thread(target=delete_mult)
+
 
 def button_creator():
     
@@ -524,18 +359,86 @@ def button_creator():
 
         print(menu_button_list[i].text,menu_button_list[i].rect)
         
-        
-        
-        
+def region_button_creator():
     
+    for i in range(len(regions)-4):
+        if i!=1:
+            middle_of_region = find_middle_of_region(regions[i])
+            region_button_list.append(Button(middle_of_region[0]*TILE_SIZE, middle_of_region[1]*TILE_SIZE, TILE_SIZE*4, TILE_SIZE*2, text=f'Region Cost: ${number_format(region_costs[i])}',command=lambda i=i: unlock_region(grid, regions[i], region_costs[i]),border_radius = 20))
+            print(middle_of_region,"ADSAKDNASKJ")
+            print(region_button_list[i].text,region_button_list[i].rect)
+        else :
+            region_button_list.append(Button(0, 0, 0, 0, text='NULL'))
+            
+        
+def find_middle_of_region(region):
+    row_start, row_stop = region[0].start, region[0].stop
+    col_start, col_stop = region[1].start, region[1].stop
+
+    middle_row = (row_start + row_stop) // 2
+    middle_col = (col_start + col_stop) // 2
+
+    return middle_row, middle_col
+
+region_costs = [10000,10000*10 , 10000*100, 10000*1000, 10000*10000, 10000*100000, 10000*1000000, 10000*10000000]
+region_button_coords = {
+    0: (6, 5),
+    1: (18, 15),
+    2: (30, 5),
+    3: (37, 5),
+    4: (6, 12),
+    5: (18, 12),
+    6: (30, 12),
+    7: (37, 12)
+    # 8: (6, 25),
+    # 9: (30, 25),
+    # 10: (18, 25),
+    # 11: (42, 25)
+    
+}
 def button_drawer():
+    for i,button in enumerate(region_button_list):
+        if regions[i][2] == True:
+            button.draw(window,x_offset = x_offset, y_offset = y_offset,move_x = move_x,move_y = move_y, dragging = dragging,TILE_SIZE =TILE_SIZE,x_coord = region_button_coords[i][0],y_coord = region_button_coords[i][1])
+    pygame.draw.rect(window, (0, 105, 148), (WINDOW_WIDTH - SIDEBAR_WIDTH, 0, SIDEBAR_WIDTH, WINDOW_HEIGHT)) 
+
     for button in menu_button_list:
 
-            button.draw(window) 
-        
-        
+        button.draw(window,scroll_offset) 
+   
+def heat_bar_updater():
+    if grid != None:
+        for i in range(len(grid)):
+            for j in range(len(grid[i])):
+                if isinstance(grid[i][j], EnergyConverter):
+                    # Generate heat in adjacent tiles
+                    if dragging:
+                        grid[i][j].draw_bar(window,TILE_SIZE,8,(i*TILE_SIZE+(mouse_pos[0]-x_offset if mouse_pos[0]-x_offset< 400  and mouse_pos[0]-x_offset> -1300 else (400 if mouse_pos[0]-x_offset > -1300 else -1300)),(j+1)*TILE_SIZE-9+(mouse_pos[1]-y_offset if mouse_pos[1]-y_offset < 400  and mouse_pos[1]-y_offset > -300 else (400 if mouse_pos[1]-y_offset > -300 else -300))),(0,80,200),(100,180,120)) 
+                    else:
+                        grid[i][j].draw_bar(window,TILE_SIZE,8,(i*TILE_SIZE+move_x,(j+1)*TILE_SIZE+move_y-9),(0,80,200),(100,180,120)) 
+
+                  
+def life_cycle_updater():
+    if grid != None:
+        for i in range(len(grid)):
+            for j in range(len(grid[i])):
+                if isinstance(grid[i][j], HeatGenerator):
+                    if dragging:
+                        grid[i][j].draw_bar(window,TILE_SIZE,8,(i*TILE_SIZE+(mouse_pos[0]-x_offset if mouse_pos[0]-x_offset< 400  and mouse_pos[0]-x_offset> -1300 else (400 if mouse_pos[0]-x_offset > -1300 else -1300)),(j+1)*TILE_SIZE-9+(mouse_pos[1]-y_offset if mouse_pos[1]-y_offset < 400  and mouse_pos[1]-y_offset > -300 else (400 if mouse_pos[1]-y_offset > -300 else -300))),(252, 186, 3),(100,180,120)) 
+                    else:
+                        grid[i][j].draw_bar(window,TILE_SIZE,8,(i*TILE_SIZE+move_x,(j+1)*TILE_SIZE+move_y-9),(252, 186, 3),(100,180,120)) 
+
+                        
+combined_dict = {}
+def dict_combiner():
+    for key, value in buy_menu.items():
+        combined_dict[value[0]] = (value,) + (tile_images[key],)
+
+    print(combined_dict)
+                
+    
 def number_format(number):
-    numbers = ["0","K","M","B","T","AA","AB","AC","BA","BB","BC"]    
+    numbers = ["0","K","M","B","T","AA","AB","AC","AD","AE","AF","AG","AH","BA","BB","BC"]    
     for i in range(len(numbers)):
         if number < 1000**(i+1):
             if i > 0:
@@ -544,31 +447,6 @@ def number_format(number):
                 return str(number)
     return f"{number/1000**(len(numbers)-1):.2f}{numbers[-1]}"
    
-# complicated because of objects
-# def load_grid(filename):
-#     try:
-#         with open(filename, 'r') as f:
-#             for i in range(NUM_TILES_X):
-#                 for j in range(NUM_TILES_Y):
-#                     grid[i][j] = f[i][j]
-#     except FileNotFoundError:
-#         print("File not found")
-#         return None
-
-# def save_grid(filename):  
-#     for i in range(NUM_TILES_X):
-#         for j in range(NUM_TILES_Y):
-#             if isinstance(grid[i][j], HeatGenerator):
-#                 grid[i][j] = 1
-#             elif isinstance(grid[i][j], EnergyConverter):
-#                 grid[i][j] = 2
-#             elif isinstance(grid[i][j], Office):
-#                 grid[i][j] = 3
-#             else:
-#                 grid[i][j] = 0
-#     with open(filename, 'w') as f:
-#         json.dump(grid, f)
-
 # Save the grid to a file
 
 def save_grid(filename):
@@ -640,7 +518,128 @@ def load_grid(filename,player,grid):
 #             return super().default(obj)
 
 
+def build_building(grid_x,grid_y):
+        print("test")
+        building_buildable = False
 
+        # for i in range(len(menu_button_list)):
+        research_check_bool = (buy_menu[selected_building][5] if selected_building > 1 else True)
+        enough_money = player.enough_money(buy_menu[selected_building][1](buy_menu[selected_building][4],buy_menu[selected_building][3],buy_menu[selected_building][0]))
+        #     print("res_check: ",research_check_bool,"/ money_check: ",enough_money)
+        #     # print("mwenu",buy_menu[selected_building][5])
+
+        if research_check_bool and enough_money :
+            click_sound.play()
+            print(buy_menu[selected_building][0])
+            grid[grid_x][grid_y] = buy_menu[selected_building][1](buy_menu[selected_building][4],buy_menu[selected_building][3],buy_menu[selected_building][0],buy_menu[selected_building][6])
+            
+            print(buy_menu[selected_building][3])
+            lists_of_buildings[buy_menu[selected_building][1]].append((grid[grid_x][grid_y],grid_x*TILE_SIZE+move_x,grid_y*TILE_SIZE+move_y))  
+            player.buy_energy_generator(buy_menu[selected_building][1](buy_menu[selected_building][4],buy_menu[selected_building][3],buy_menu[selected_building][0],buy_menu[selected_building][6]))
+            print(buy_menu[selected_building][0],"bought")
+            building_buildable = True
+            if isinstance(grid[grid_x][grid_y],Battery):
+                player.max_energy += grid[grid_x][grid_y].battery_capacity
+            
+
+        if not building_buildable:
+            print("None",research_check_bool, enough_money)
+            dragging2 = False
+            if  research_check_bool and not enough_money:
+                print("1",research_check_bool, enough_money)
+                confirmation_window(not_enough_money_text,ok_text)
+            elif not research_check_bool and  enough_money:
+                print("2",research_check_bool, enough_money)
+                confirmation_window(not_researched_text,ok_text)
+
+            elif not research_check_bool and not enough_money:
+                print("3",research_check_bool, enough_money)
+                confirmation_window(not_researched_text,ok_text)
+                
+                
+def quick_build():
+        
+    empty_tile_count = 0
+    for sublist in grid:
+        empty_tile_count += sublist.count(TILE_EMPTY)
+            
+            
+    while True:
+        
+        row = random.choice(range(46))
+        column = random.choice(range(30))
+        if empty_tile_count == 0:
+            break
+        if grid[row][column] == TILE_EMPTY:
+            build_building(row,column)
+            break  
+        
+    
+def quick_revive():
+    found = False
+
+    for i in range(len(grid)):
+        for j in range(len(grid[i])):
+            print(grid[i][j])
+
+            if isinstance(grid[i][j], HeatGenerator) and grid[i][j].life_left == 0:
+                grid[i][j].life_left = grid[i][j].life_cycle
+                found = True
+                break
+        if found:
+            break        
+                
+                
+                
+def time_skip(skip_amount):
+    
+    for i in range(skip_amount):
+        previous_money = player.money
+        for office in lists_of_buildings[Office]:
+            office[0].sell_energy(player)
+            total_energy_sold += office[0].energy_sell_rate
+        new_money = player.money
+        money_gen_per_second = new_money - previous_money
+        previous_energy = player.energy
+        energy_gen()
+        new_energy = player.energy
+        energy_gen_per_second = new_energy - previous_energy
+
+            # print("Energy sold",office.energy_sell_rate,"/ Tier",office.tier)
+        previous_research = player.research
+        for lab in lists_of_buildings[ResearchLab]:
+            lab[0].research(player) 
+        new_research = player.research
+        research_gen_per_second = new_research - previous_research
+        
+        for generator in lists_of_buildings[HeatGenerator]:
+            generator[0].update_life_left()
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def convert_buy_menu_to_list():
+     for i in range(len(buy_menu)):
+        research = list(buy_menu[i+1])
+        research[5] = research[5]
+        buy_menu[i+1] = research
 
 # Tile constants
 TILE_SIZE = 50
@@ -664,34 +663,25 @@ YELLOW = (255, 255, 0)
 HIGHLIGHT_COLOR = (255, 0, 0, 128)  # Red with 50% opacity
 
 # Tile types
-TILE_EMPTY = 0
+TILE_EMPTY = 1
+TILE_OCEAN = 0
 TILE_CONVERTER = 1
 TILE_GENERATOR = 2
 TILE_OFFICE = 3
 TILE_ResearchLab = 4
+TILE_CLOUDY = 5
 
 
 
 
-# # Object prices
-# CONVERTER_PRICE = 200
-# GENERATOR_PRICE = 300
-# OFFICE_PRICE = 500
-# RESEARCHLAB_PRICE = 1000
 
-# # Energy production rates for each building type
-# ENERGY_RATE_CONVERTER = 2/60
-# ENERGY_RATE_GENERATOR = 5/60
 
 # Initialize pygame
 pygame.init()
 
-# Initialize the window
-# WINDOW_WIDTH = NUM_TILES_X * TILE_SIZE + SIDEBAR_WIDTH
-# WINDOW_HEIGHT = NUM_TILES_Y * TILE_SIZE +50
-# WINDOW_HEIGHT = NUM_TILES_Y * TILE_SIZE  
+
 WINDOW_HEIGHT = 800
-WINDOW_WIDTH = 1600
+WINDOW_WIDTH = 1700
 window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption('Energy Tycoon')
 
@@ -709,26 +699,9 @@ font = pygame.font.Font(None, 24)
 
 # Initialize game objects
 player = Player()
-# energy_generator = HeatGenerator(1)  # Slower energy generation
-# energy_converter = EnergyConverter(1)  # More efficient conversion
-# office = Office(1)
+
+
 heat_grid = [[0 for _ in range(NUM_TILES_Y)] for _ in range(NUM_TILES_X)]  # Heat grid for generators
-
-# Initialize the grid with empty tiles
-grid = [[TILE_EMPTY for _ in range(NUM_TILES_Y)] for _ in range(NUM_TILES_X)]
-# converters= []
-# generators = []
-# offices = []
-# labs = []
-
-turkey_grid = [[0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 
-0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 
-0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 
-0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0,0,0,0,0], [0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
 
 
 # Sample prices for different tiers (you should replace these with your actual prices)
@@ -750,112 +723,16 @@ Researches = {
 
 
 # Load building images
-tile_images = {
- 
-
-    1: pygame.transform.scale(pygame.image.load('Data/windmill.png'), (50,50)),
-    2: pygame.transform.scale(pygame.image.load('Data/research1full.png'), (50,50)),
-    3: pygame.transform.scale(pygame.image.load('Data/battery.png'), (50,50)),
-    4: pygame.transform.scale(pygame.image.load('Data/officefull.png'), (50,50)),
-    5: pygame.transform.scale(pygame.image.load('Data/solarpanelfull.png'), (50,50)),
-    6: pygame.transform.scale(pygame.image.load('Data/generatorfull.png'), (50,50)),
-    7: pygame.transform.scale(pygame.image.load('Data/coalfactory.png'), (50,50)),
-    8: pygame.transform.scale(pygame.image.load('Data/office2.png'), (50,50)),
-    9: pygame.transform.scale(pygame.image.load('Data/gasburnerfull.png'), (50,50)),
-    10: pygame.transform.scale(pygame.image.load('Data/generator2full.png'), (50,50)),
-    11: pygame.transform.scale(pygame.image.load('Data/research2full.png'), (50,50)),
-    12: pygame.transform.scale(pygame.image.load('Data/nuclearreactorfull.png'), (50,50)),
-    13: pygame.transform.scale(pygame.image.load('Data/office3.png'), (50,50)),
-    14: pygame.transform.scale(pygame.image.load('Data/thermoreactorfull.png'), (50,50)),
-    15: pygame.transform.scale(pygame.image.load('Data/office4.png'), (50,50)),
-    16: pygame.transform.scale(pygame.image.load('Data/fusion.png'), (50,50)),
-    17: pygame.transform.scale(pygame.image.load('Data/generator3full.png'), (50,50)),
-    18: pygame.transform.scale(pygame.image.load('Data/office5.png'), (50,50)),
-    19: pygame.transform.scale(pygame.image.load('Data/tokamak.png'), (50,50)),
-    20: pygame.transform.scale(pygame.image.load('Data/stellarator.png'), (50,50)),
-    21: pygame.transform.scale(pygame.image.load('Data/generator4.png'), (50,50)),
-    22: pygame.transform.scale(pygame.image.load('Data/office6.png'), (50,50)),
-    23: pygame.transform.scale(pygame.image.load('Data/ufo.png'), (50,50)),
-    24: pygame.transform.scale(pygame.image.load('Data/arc.png'), (50,50)),
-    25: pygame.transform.scale(pygame.image.load('Data/office7.png'), (50,50)),
-    26: pygame.transform.scale(pygame.image.load('Data/research3full.png'), (50,50)),
-    27: pygame.transform.scale(pygame.image.load('Data/cosmic.png'), (50,50)),
-    28: pygame.transform.scale(pygame.image.load('Data/geothermal.png'), (50,50)),
-    29: pygame.transform.scale(pygame.image.load('Data/generator5full2.png'), (50,50)),
-    30: pygame.transform.scale(pygame.image.load('Data/tesla.png'), (50,50)),
-    31: pygame.transform.scale(pygame.image.load('Data/office8.png'), (50,50)),
-    32: pygame.transform.scale(pygame.image.load('Data/dark.png'), (50,50))
-}
 
 background_image = pygame.transform.scale(pygame.image.load('Data/background.jpg'), (50, 50))
 # turkey_grid = pygame.transform.scale(pygame.image.load('Data/turkey_map.png'), (50, 50))
 
-converter_menu_images = {
-    1: pygame.transform.scale(pygame.image.load('Data/generator1.png'), (40, 40)),
-    2: pygame.transform.scale(pygame.image.load('Data/generator2fullmenu.png'), (40, 40)),
-    3: pygame.transform.scale(pygame.image.load('Data/generator1.png'), (40, 40)),
-    4: pygame.transform.scale(pygame.image.load('Data/generator2fullmenu.png'), (40, 40)),
-    5: pygame.transform.scale(pygame.image.load('Data/generator3fullmenu.png'), (40, 40))
 
-    
-}
-generator_menu_images = {
- 
-    1 : pygame.transform.scale(pygame.image.load('Data/windmill_menu.png'), (40, 40)),
-    2 : pygame.transform.scale(pygame.image.load('Data/convertermenu.png'), (40, 40)),
-    3 : pygame.transform.scale(pygame.image.load('Data/coalfactorymenu.png'), (40, 40)),
-    4: pygame.transform.scale(pygame.image.load('Data/gasburnerfull.png'), (40, 40)),
-    5: pygame.transform.scale(pygame.image.load('Data/nuclearreactorfull.png'), (40, 40)),
-    6: pygame.transform.scale(pygame.image.load('Data/generator4full.png'), (40, 40)),
-    7: pygame.transform.scale(pygame.image.load('Data/generator5full.png'), (40, 40)),
-    8 : pygame.transform.scale(pygame.image.load('Data/convertermenu.png'), (40, 40)),
-    9 : pygame.transform.scale(pygame.image.load('Data/coalfactorymenu.png'), (40, 40)),
-    10: pygame.transform.scale(pygame.image.load('Data/gasburnerfull.png'), (40, 40)),
-    11: pygame.transform.scale(pygame.image.load('Data/nuclearreactorfull.png'), (40, 40)),
-    12: pygame.transform.scale(pygame.image.load('Data/generator4full.png'), (40, 40)),
-    13: pygame.transform.scale(pygame.image.load('Data/generator5full.png'), (40, 40)),
-    14: pygame.transform.scale(pygame.image.load('Data/generator6full.png'), (40, 40)),
-    15: pygame.transform.scale(pygame.image.load('Data/generator5full.png'), (40, 40))
- 
-}
-office_menu_images = {
- 
-    1 : pygame.transform.scale(pygame.image.load('Data/office.png'), (40, 40)),
-    2 : pygame.transform.scale(pygame.image.load('Data/office2menu.png'), (40, 40)),
-    3 : pygame.transform.scale(pygame.image.load('Data/office3menu.png'), (40, 40)),
-    4 : pygame.transform.scale(pygame.image.load('Data/office.png'), (40, 40)),
-    5 : pygame.transform.scale(pygame.image.load('Data/office2menu.png'), (40, 40)),
-    6 : pygame.transform.scale(pygame.image.load('Data/office3menu.png'), (40, 40)),   
-    7 : pygame.transform.scale(pygame.image.load('Data/office2menu.png'), (40, 40)),
-    8 : pygame.transform.scale(pygame.image.load('Data/office3menu.png'), (40, 40))
-}
-researchlab_menu_images = {
- 
-    1 : pygame.transform.scale(pygame.image.load('Data/research1.png'), (40, 40)),
-    2 : pygame.transform.scale(pygame.image.load('Data/research2.png'), (40, 40)),
-    3 : pygame.transform.scale(pygame.image.load('Data/research3.png'), (40, 40))
-}
-
-explosion_images = {
-    1 : pygame.transform.scale(pygame.image.load('Data/explosion1.png'), (50,50)),
-    2 : pygame.transform.scale(pygame.image.load('Data/explosion2.png'), (50,50)),
-    3 : pygame.transform.scale(pygame.image.load('Data/explosion3.png'), (50,50)),
-    4 : pygame.transform.scale(pygame.image.load('Data/explosion4.png'), (50,50)),
-    5 : pygame.transform.scale(pygame.image.load('Data/explosion5_scuffed.png'), (50,50)),
-    6 : pygame.transform.scale(pygame.image.load('Data/explosion6.png'), (50,50)),
-    7 : pygame.transform.scale(pygame.image.load('Data/explosion7.png'), (50,50))
-}
-
-battery_images = {
-    1:pygame.transform.scale(pygame.image.load('Data/batterymenu.png'), (40,40)),
-    2:pygame.transform.scale(pygame.image.load('Data/battery.png'), (50,50))
-
-}
-
+               # 1   2    3    4    5    6    7    8    9    10     11        12       13         14        15          16          17              18              19              20              21                       22                         23                  24                  25                      26                          27                                  28                      29                                       30                                       31                          32                          33                                  34                                    35
+# upgrade_costs = [250,15,25000,1000,300,1000,400,1000,10000,125000,5000000,20000000,125000000,5000000000,50000000000,100000000000,500000000000,100000000000000,500000000000000,100000000000000000,500000000000000000,100000000000000000000,500000000000000000000,50000000000000000000000,250000000000000000000000,20000000000000000000000000,100000000000000000000000000,20000000000000000000000000000,100000000000000000000000000000,20000000000000000000000000000000,100000000000000000000000000000000,20000000000000000000000000000000000,100000000000000000000000000000000000,20000000000000000000000000000000000000,100000000000000000000000000000000000000]
 upgrade_costs = []
-
 for i in range(35):
-    upgrade_costs.append(50*i+50)
+    upgrade_costs.append(500*(i+1))
     
     
 research_costs = []
@@ -871,7 +748,7 @@ menu_button_list = []
 buy_menu_tags= ["name","class","image","upgrade1","tier","research","upgrade2"]
 
 
-
+region_button_list = []
 
 #Upgrade Stats
 CONVERTER_UPGRADE = 1
@@ -917,43 +794,20 @@ buy_menu = {
     32:("Dark Energy Reactor",HeatGenerator,generator_menu_images[15],1,15,False,1),
 }
 
-# upgrade_menu = {
-#     1: ("Wind Turbine", buy_menu[1][3]),
-#     2: ("Wind Turbine", buy_menu[1][6]),
-#     3: ("Research Center", RESEARCHLAB_UPGRADE),
-#     4: ("Office", OFFICE_UPGRADE),
-#     5: ("Battery", BATTERY_UPGRADE),
-#     6: ("Generator", CONVERTER_UPGRADE),
-#     7: ("Generator", CONVERTER_UPGRADE2),
-#     8: ("Solar Panel", buy_menu[5][3]),
-#     9: ("Solar Panel", buy_menu[5][6]),
-#     10: ("Coal Burner", buy_menu[7][3]),
-#     11: ("Coal Burner", buy_menu[7][6]),
-#     12: ("Gas Burner", buy_menu[9][3]),
-#     13: ("Gas Burner", buy_menu[9][6]),
-#     14: ("Nuclear Reactor", buy_menu[12][3]),
-#     15: ("Nuclear Reactor", buy_menu[12][6]),
-#     16: ("Thermo Reactor", buy_menu[14][3]),
-#     17: ("Thermo Reactor", buy_menu[14][6]),
-#     18: ("Fusion Reactor", buy_menu[16][3]),
-#     19: ("Fusion Reactor", buy_menu[16][6]),
-#     20: ("Tokamak", buy_menu[19][3]),
-#     21: ("Tokamak", buy_menu[19][6]),
-#     22: ("Stellarator", buy_menu[20][3]),
-#     23: ("Stellarator", buy_menu[20][6]),
-#     24: ("Ufo Spaceship Reactor", buy_menu[23][3]),
-#     25: ("Ufo Spaceship Reactor", buy_menu[23][6]),
-#     26: ("Arc Reactor", buy_menu[24][3]),
-#     27: ("Arc Reactor", buy_menu[24][6]),
-#     28: ("Cosmic Radiation Reactor", buy_menu[27][3]),
-#     29: ("Cosmic Radiation Reactor", buy_menu[27][6]),
-#     30: ("Geothermal Reactor", buy_menu[28][3]),
-#     31: ("Geothermal Reactor", buy_menu[28][6]),
-#     32: ("Tesla Reactor", buy_menu[30][3]),
-#     33: ("Tesla Reactor", buy_menu[30][6]),
-#     34: ("Dark Energy Reactor", buy_menu[32][3]),
-#     35: ("Dark Energy Reactor", buy_menu[32][6])
-# }
+buy_menu_item_types = {}
+
+for key, value in buy_menu.items():
+    if value[1] == HeatGenerator:
+        buy_menu_item_types[key] = "HeatGenerator"
+    if value[1] == EnergyConverter:
+        buy_menu_item_types[key] = "Generator"
+    if value[1] == Office:
+        buy_menu_item_types[key] = "Office"
+    if value[1] == ResearchLab:
+        buy_menu_item_types[key] = "Research Center"
+    if value[1] == Battery:
+        buy_menu_item_types[key] = "Battery"
+    
 
 upgrade_menu = {
     1: ("Wind Turbine", 1,3),
@@ -1003,15 +857,16 @@ selected_building = None  # Selected building type (None, CONVERTER, GENERATOR, 
 
 current_tier = 1
 
-not_researched_text = font.render(f'   Not Researched    ', True, (0, 0, 0))
+not_researched_text = font.render(f'   Not Researched Yet!    ', True, (0, 0, 0))
 ok_text = font.render(f'Ok', True, (0, 0, 0))
-not_enough_money_text = font.render(f'   Not Enough Money    ', True, (0, 0, 0))
-not_enough_research = font.render(f'   Not Enough Research    ', True, (0, 0, 0))
+not_enough_money_text = font.render(f'   Not Enough Money!    ', True, (0, 0, 0))
+not_enough_research = font.render(f'   Not Enough Research Points!    ', True, (0, 0, 0))
 
 menu_text = font.render("Buy Menu", True, (255, 255, 255))
 
 
 dragging = False
+dragging2 = False
 test_text = None
 state = "Buy"
 
@@ -1030,25 +885,20 @@ offsets = {
 
 
 
+# MENU BUTTONS
 
 
 
-
-#DEFINE BUTTONS
-# buy_button1 = Button(WINDOW_WIDTH - SIDEBAR_WIDTH +15,7* SIDEBAR_ITEM_HEIGHT -55, 100, 30, 'Buy', lambda: print('Button clicked'))
-# upgrade_button1 = Button(WINDOW_WIDTH - SIDEBAR_WIDTH +300, 7* SIDEBAR_ITEM_HEIGHT -55, 100, 30, 'Upgrade', lambda: print('Button clicked'))
-upgrade_button1  = Button(WINDOW_WIDTH - SIDEBAR_WIDTH +300, 10* SIDEBAR_ITEM_HEIGHT -45, 100, 30, 'Upgrade', lambda: print('Button clicked'))
-buy_button1 = Button(WINDOW_WIDTH - SIDEBAR_WIDTH +15, 10* SIDEBAR_ITEM_HEIGHT -45, 100, 30, 'Buy', lambda: print('Button clicked'))
+buy_button1 = Button(WINDOW_WIDTH - SIDEBAR_WIDTH +30, 10* SIDEBAR_ITEM_HEIGHT -45, 100, 30, 'Buy', lambda: print('Button clicked'),border_radius = 10)
 testbutton = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, SIDEBAR_ITEM_HEIGHT , 100, 30, 'Buy')
-delete_multiple_button = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 161, 11* SIDEBAR_ITEM_HEIGHT -55 , 100, 30, 'X')
-research_button = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 161, 10* SIDEBAR_ITEM_HEIGHT -45, 100, 30, 'Research')
-convert_button = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, WINDOW_HEIGHT - 200, 200 , 30, 'Convert Energy To Money', lambda: print('Button clicked'),(125, 200, 125))
-# menu_button1  = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, 1 * SIDEBAR_ITEM_HEIGHT - 40, 450, 50)
-# menu_button2  = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, 2 * SIDEBAR_ITEM_HEIGHT - 40, 450, 50)
-# menu_button3  = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, 3 * SIDEBAR_ITEM_HEIGHT - 40, 450, 50)
-# menu_button4  = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, 4 * SIDEBAR_ITEM_HEIGHT - 40, 450, 50)
-# menu_button5  = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, 5 * SIDEBAR_ITEM_HEIGHT - 40, 450, 50, "Tier 1 Battery", lambda: print('Button clicked'),(0,80,200),battery_images)
-# menu_button5  = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, 6 * SIDEBAR_ITEM_HEIGHT - 40, 450, 50)
+delete_multiple_button = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 150, 11* SIDEBAR_ITEM_HEIGHT -55 , 200, 30, 'Delete Multiple Buildings',border_radius = 10)
+research_button = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 200, 10* SIDEBAR_ITEM_HEIGHT -45, 100, 30, 'Research',border_radius = 10)
+upgrade_button1  = Button(WINDOW_WIDTH - SIDEBAR_WIDTH +370, 10* SIDEBAR_ITEM_HEIGHT -45, 100, 30, 'Upgrade', lambda: click_sound.play(),border_radius = 10)
+
+convert_button = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, WINDOW_HEIGHT - 200, 220 , 30, 'Convert Energy To Money (M)', lambda: print('Button clicked'),(125, 200, 125),border_radius = 10)
+quickplace_button = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, WINDOW_HEIGHT - 150, 220 , 30, 'Quickly Place a Building (Q)', lambda: print('Button clicked'),(125, 200, 125),border_radius = 10)
+quickrevive_button = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 255, WINDOW_HEIGHT - 150, 230 , 30, 'Quickly Revive a Generator (R)', lambda: print('Button clicked'),(125, 200, 125),border_radius = 10)
+
 scroll_tracker  = Button(WINDOW_WIDTH - SIDEBAR_WIDTH + 10+450,1 * SIDEBAR_ITEM_HEIGHT - 40, 15, 10,"Tracker")
 
 
@@ -1067,9 +917,10 @@ lists_of_buildings =    {
     ResearchLab: [],
     Battery: []
 }
+coords_of_buildings = []
 
 scroll_bar = pygame.Surface((WINDOW_WIDTH - SIDEBAR_WIDTH, 5 * SIDEBAR_ITEM_HEIGHT - 40),pygame.SRCALPHA)
-scroll_bar_rect = pygame.Rect(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, 1 * SIDEBAR_ITEM_HEIGHT - 40, 450, 200)
+scroll_bar_rect = pygame.Rect(WINDOW_WIDTH - SIDEBAR_WIDTH + 10, 1 * SIDEBAR_ITEM_HEIGHT - 40, 450, 400)
 # side_bar = pygame.Surface((WINDOW_WIDTH - SIDEBAR_WIDTH, WINDOW_HEIGHT))
 # side_bar.fill((200, 200, 200))
 # side_bar_rect = pygame.Rect(side_bar.get_rect())
@@ -1080,16 +931,13 @@ grid_rect = pygame.Rect(0, 0, NUM_TILES_X * TILE_SIZE, NUM_TILES_Y * TILE_SIZE)
 
 
 
-# # Camera position
-# camera_x = 0
-# camera_y = 0
-# mouse_dragging = False
-# prev_mouse_pos = (0, 0)
-
-
+click_sound =   pygame.mixer.Sound("Data/click_sound.mp3")
+click_sound.set_volume(0.4)
+explosion_sound = pygame.mixer.Sound("Data/explosion_sound.mp3")
+explosion_sound.set_volume(0.4)
 
 button_creator()
-
+region_button_creator()
 
 x_offset = 0
 y_offset = 0
@@ -1099,19 +947,99 @@ mouse_pos = pygame.mouse.get_pos()
 map_x_max = 300
 map_y_max = 300
 
+energy_gen2 = pygame.USEREVENT + 1
+pygame.time.set_timer(energy_gen2, 250)
 
-
-
-
+energy_gen_per_second= 0
+money_gen_per_second= 0
+research_gen_per_second = 0
 switch_view("Buy",current_tier)
 # grid = load_grid("save.json",player,grid)
 save_buildings= []
-
-
+dict_combiner()
+convert_buy_menu_to_list()
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        #when m is pressed press the convert_button
+        elif event.type == energy_gen2:
+            # print("this should be printed every second")
+            previous_money = player.money
+            for office in lists_of_buildings[Office]:
+                office[0].sell_energy(player)
+                total_energy_sold += office[0].energy_sell_rate
+            new_money = player.money
+            money_gen_per_second = new_money - previous_money
+            previous_energy = player.energy
+            energy_gen()
+            new_energy = player.energy
+            energy_gen_per_second = new_energy - previous_energy
+
+                # print("Energy sold",office.energy_sell_rate,"/ Tier",office.tier)
+            previous_research = player.research
+            for lab in lists_of_buildings[ResearchLab]:
+                lab[0].research(player) 
+            new_research = player.research
+            research_gen_per_second = new_research - previous_research
+            
+            for generator in lists_of_buildings[HeatGenerator]:
+                generator[0].update_life_left()
+            
+            #lifetime decrease
+            
+            
+        elif event.type == pygame.KEYDOWN:
+            
+            if event.key == pygame.K_m:
+                player.sell_energy(player.energy) 
+                
+            if event.key == pygame.K_r:
+                # while True:
+                quick_revive()
+                # found = False
+
+                # for i in range(len(grid)):
+                #     for j in range(len(grid[i])):
+                #         print(grid[i][j])
+
+                #         if isinstance(grid[i][j], HeatGenerator) and grid[i][j].life_left == 0:
+                #             grid[i][j].life_left = grid[i][j].life_cycle
+                #             found = True
+                #             break
+                #     if found:
+                #         break
+
+                    # row = random.choice(range(46))
+                    # column = random.choice(range(30))
+                    # print(grid[row][column])
+
+                    # if revive_iteration_count == 50:
+                    #     break
+                    # revive_iteration_count += 1
+                    # if isinstance(grid[row][column],HeatGenerator) and grid[row][column].life_left==0:
+                    #     grid[row][column].life_left = grid[row][column].life_cycle
+                    #     break
+                    
+            if event.key == pygame.K_q:
+                # build_building()
+                # empty_tile_count = 0
+                # for sublist in grid:
+                #     empty_tile_count += sublist.count(TILE_EMPTY)
+                        
+                        
+                # while True:
+                    
+                #     row = random.choice(range(46))
+                #     column = random.choice(range(30))
+                #     if empty_tile_count == 0:
+                #         break
+                #     if grid[row][column] == TILE_EMPTY:
+                #         build_building(row,column)
+                #         break
+                quick_build()
+
+                
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
             grid_x = mouse_pos[0] // TILE_SIZE
@@ -1119,15 +1047,20 @@ while running:
             
             # if event.button == 1 and scroll_bar_rect.collidepoint(mouse_pos):  # Left click
             if event.button == 1 :  # Left click
-  
+                
                 print(dragging)
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 print("Clicked ", mouse_x//TILE_SIZE, mouse_y//TILE_SIZE)
                 # if testbutton.rect.collidepoint(mouse_pos):
                 #     print("test")
+                # if 0<mouse_pos[0]<1200 and 0<mouse_pos[1]<800:
+                #     player.generate_energy(1)
+                
                 
                 if research_button.rect.collidepoint(mouse_pos):
                     state = "Research"
+                    #unlocks_all_research
+                    #unlock_all_research()
                     tab_change(current_offset)
                     current_offset = 0
                     print("Research button clicked")
@@ -1151,6 +1084,8 @@ while running:
                     print("upgrade button clicked")
                     
                 elif delete_multiple_button.rect.collidepoint(mouse_pos):
+                    
+                    #delete_mult_thread.start()
                     delete_mult()
                                   
                     
@@ -1162,7 +1097,13 @@ while running:
                         # Update money display after successful conversion
                         money_text = font.render(f'Money: {int(player.money)}', True, (0, 0, 0))
                         
-                        
+                elif quickplace_button.rect.collidepoint(mouse_pos):
+                    quick_build()
+                  
+                elif quickrevive_button.rect.collidepoint(mouse_pos):
+                    quick_revive()
+                       
+                       
                 # Opens buy menu
                 elif scroll_bar_rect.collidepoint(mouse_pos) and state == "Buy":
 
@@ -1207,36 +1148,75 @@ while running:
 
 
 
-                  # upgrade mne      
+                  # upgrade logic      
                 elif scroll_bar_rect.collidepoint(mouse_pos) and state == "Upgrade":
                     
                     
-                    for i, button in enumerate(menu_button_list):
+                      for i, button in enumerate(menu_button_list):
                         if button.rect.collidepoint(mouse_pos):
                             money_check = player.money > upgrade_costs[i]
                             if money_check:
                                 if 1 < i < 7:
-                                    print(player.money,upgrade_costs[i])
+                                    for key, value in buy_menu.items():
+                                        if buy_menu_item_types[key] == button.text.split(":")[0]:
+                                            
+
+                                            buy_menu[key][3] +=1
                                     player.buy_upgrade(upgrade_costs[i])
-                                    upgrade_menu_2[i-2]+=1
-                                    upgrade_costs[i]*=2
-                                    print("eww",lists_of_buildings[upgrade_menu[i+1][2]])
-                                    
+                                    upgrade_costs[i]*=(int(button.text.split("%")[1].split(" ")[0])*2/100)+1
+                                    print((int(button.text.split("%")[1].split(" ")[0])*2/100)+1)
+                                    # upgrade_menu_2[i-2]+=1
+                                    # upgrade_costs[i]*=2
+                                    # print(buy_menu[i+1])
+                                    # buy_menu[f'{button.text.split(":")[0]}'][3] +=1
+                                    # print(buy_menu[f'{button.text.split(":")[0]}'])
+                                    # print("eww",lists_of_buildings[f'{upgrade_menu[button.text.split(":")[0]][2]}'])
+                                    # print(button.text.split(":")[0])
+                                   
                                     for building in lists_of_buildings[upgrade_menu[i+1][2]]:
-                                        building.upgrade_production()
+                                        if button.text.split(":")[0] == "Battery":
+                                            player.max_energy -= building[0].battery_capacity
+                                            building[0].upgrade_production()
+                                            player.max_energy += building[0].battery_capacity
+                                        elif button.text.split(":")[0] == "Generator":
+                                            if "Heat" in button.text:
+                                                print("building",building[0].name)
+                                                building[0].upgrade_max_heat()
+                                            elif "Conversion" in button.text:
+                                                print("building",building[0].name)
+
+                                                building[0].upgrade_production()
+                                                
+                                        else: 
+                                            building[0].upgrade_production()
+
+                                    break
                                 else :
                                     print("money check ",player.money,upgrade_costs[i],money_check)
 
                                     player.buy_upgrade(upgrade_costs[i])
-                                    # upgrade_list = list(buy_menu[upgrade_menu[i+1][1]])
+                                    # # upgrade_list = list(buy_menu[upgrade_menu[i+1][1]])
                                     
                                     upgrade_count = list(buy_menu[upgrade_menu[i+1][1]])
                                     upgrade_count[upgrade_menu[i+1][2]] +=1
                                     buy_menu[upgrade_menu[i+1][1]] = upgrade_count
-                                    upgrade_costs[i]*=2
-                                    for building in lists_of_buildings[ buy_menu[upgrade_menu[i+1][1]][1]]:
-                                        building.upgrade_production()
-                                    
+                                    upgrade_costs[i]*=(int(button.text.split("%")[1].split(" ")[0])*2/100)+1
+                                    print((int(button.text.split("%")[1].split(" ")[0])*2/100)+1)
+                                    # for building in lists_of_buildings[ buy_menu[upgrade_menu[i+1][1]][1]]:
+                                    #     building[0].upgrade_production()
+                                    # 
+                                    # print(buy_menu[upgrade_menu[i+1][1]][0])
+                                    # print(lists_of_buildings[buy_menu[upgrade_menu[i+1][1]][1]][0][0].name)
+                                    if "Lifetime" in button.text:
+                                        for building in lists_of_buildings[ buy_menu[upgrade_menu[i+1][1]][1]]:
+                                            print(building[0].name, buy_menu[upgrade_menu[i+1][1]][0],"TESTİNGTESTİNG")
+                                            if building[0].name == buy_menu[upgrade_menu[i+1][1]][0]:
+                                                building[0].upgrade_life()
+                                    elif "Production" in button.text:
+                                        for building in lists_of_buildings[ buy_menu[upgrade_menu[i+1][1]][1]]:
+                                            if building[0].name == buy_menu[upgrade_menu[i+1][1]][0]:
+                                                building[0].upgrade_production()
+                                   
                                     
     
                             else:
@@ -1245,80 +1225,45 @@ while running:
 
 
                     
-
-                    # Place selected building on the grid
-                elif  selected_building != None and 0 < mouse_pos[0] < NUM_TILES_X*TILE_SIZE+move_x  and 0 < mouse_pos[1] <  NUM_TILES_Y*TILE_SIZE+move_y and grid[(mouse_pos[0]-move_x) // TILE_SIZE][(mouse_pos[1]-move_y) // TILE_SIZE] == TILE_EMPTY and state == "Buy" :
-                    # if dragging == True:
-                    #     print("dragging")
-                    # Place selected building on the grid
-                    grid_x = (mouse_pos[0]-move_x) // TILE_SIZE
-                    grid_y = (mouse_pos[1]-move_y) // TILE_SIZE
-                    print((mouse_pos[1]-current_offset)// TILE_SIZE)
-                                                             #BUY BUILDINGS 
-                    if 0 <= grid_x < NUM_TILES_X and 0 <= grid_y < NUM_TILES_Y :
-                        building_buildable = False
-
-                        # for i in range(len(menu_button_list)):
-                        #     # research_check_bool = research_check(selected_building,selected_building,(buy_menu[selected_building][5] if selected_building > 2 else True))
-                        research_check_bool = (buy_menu[selected_building][5] if selected_building > 1 else True)
-                        enough_money = player.enough_money(buy_menu[selected_building][1](buy_menu[selected_building][4],buy_menu[selected_building][3],buy_menu[selected_building][0]))
-                        #     print("res_check: ",research_check_bool,"/ money_check: ",enough_money)
-                        #     # print("mwenu",buy_menu[selected_building][5])
-
-                        if research_check_bool and enough_money :
-                            grid[grid_x][grid_y] = buy_menu[selected_building][1](buy_menu[selected_building][4],buy_menu[selected_building][3],buy_menu[selected_building][0])
-                            lists_of_buildings[buy_menu[selected_building][1]].append(grid[grid_x][grid_y])  
-                            player.buy_energy_generator(buy_menu[selected_building][1](buy_menu[selected_building][4],buy_menu[selected_building][3],buy_menu[selected_building][0]))
-                            print(buy_menu[selected_building][0],"bought")
-                            building_buildable = True
-                            if isinstance(grid[grid_x][grid_y],Battery):
-                                player.max_energy += grid[grid_x][grid_y].battery_capacity
+               
+               
+                                
+                
                             
-
-                        if not building_buildable:
-                            print("None",research_check_bool, enough_money)
-
-                            if  research_check_bool and not enough_money:
-                                print("1",research_check_bool, enough_money)
-                                confirmation_window(not_enough_money_text,ok_text)
-                            elif not research_check_bool and  enough_money:
-                                print("2",research_check_bool, enough_money)
-                                confirmation_window(not_researched_text,ok_text)
-
-                            elif not research_check_bool and not enough_money:
-                                print("3",research_check_bool, enough_money)
-                                confirmation_window(not_researched_text,ok_text)
-
+                
+                        
+                if 0<mouse_pos[0] < 1200 and 0 <mouse_pos[1] < 800 :
+                    dragging2 = True
 
             elif event.button == 3:  # Right click
-                # Sell selected building on the grid
-                grid_x = (mouse_pos[0]-move_x) // TILE_SIZE
-                grid_y = (mouse_pos[1]-move_y) // TILE_SIZE
-                if   0 < mouse_pos[0] < NUM_TILES_X*TILE_SIZE+move_x and 0 < mouse_pos[1] <  NUM_TILES_Y*TILE_SIZE+move_y and grid[grid_x][grid_y] != TILE_EMPTY : 
+                # # Sell selected building on the grid
+                # print("test")
+                # grid_x = (mouse_pos[0]-move_x) // TILE_SIZE
+                # grid_y = (mouse_pos[1]-move_y) // TILE_SIZE
+                # print("Coordinates",grid_x,grid_y)
+                # if   (0 <= grid_x < len(grid)*TILE_SIZE and 0 <= grid_y < len(grid[grid_x])*TILE_SIZE) and grid[grid_x][grid_y] != TILE_EMPTY and grid[grid_x][grid_y] != TILE_OCEAN and grid[grid_x][grid_y] != TILE_CLOUDY: 
+                #     print("inside if 1")
 
-                    if  0<= grid_x < NUM_TILES_X and 0 <= grid_y < NUM_TILES_Y:
-                        if isinstance(grid[grid_x][grid_y], EnergyConverter):
-                            if(player.sell_building(grid[grid_x][grid_y])):
-                                grid[grid_x][grid_y] = TILE_EMPTY
-                        elif isinstance(grid[grid_x][grid_y], HeatGenerator):
-                            if(player.sell_building(grid[grid_x][grid_y])):
-                                grid[grid_x][grid_y] = TILE_EMPTY
-                        elif isinstance(grid[grid_x][grid_y], Office):
-                            if(player.sell_building(grid[grid_x][grid_y])):
-                                grid[grid_x][grid_y] = TILE_EMPTY
-                        elif isinstance(grid[grid_x][grid_y], ResearchLab):
-                                if(player.sell_building(grid[grid_x][grid_y])):
-                                    grid[grid_x][grid_y] = TILE_EMPTY
+                #     if isinstance(grid[grid_x][grid_y], (EnergyConverter, HeatGenerator, Office, ResearchLab,Battery)):
+                #         print("inside if 2")
+
+                #         if sell_building(grid[grid_x][grid_y]):
+                #             print("inside if 3")
+
+                #             # explosion_thread = threading.Thread(target=handle_destruction,args=(grid[grid_x][grid_y],))
+                #             # explosion_thread.start()
+                #             grid[grid_x][grid_y] = TILE_EMPTY
+
                                 
-                else :
-                    dragging = True
-                   
+               
+                dragging = True
+                
+                print("dragging")
+                x_offset=mouse_pos[0]-move_x
+                y_offset=mouse_pos[1]-move_y
+                
 
-                    x_offset=mouse_pos[0]-move_x
-                    y_offset=mouse_pos[1]-move_y
-                    
-
-                    print("offset",x_offset,y_offset)
+                print("offset",x_offset,y_offset)
                 
             elif event.button == 4 and scroll_bar_rect.collidepoint(mouse_pos)   :  # Mouse wheel up
                
@@ -1333,18 +1278,44 @@ while running:
                     current_offset += scroll_speed
                     # print("scroll up",scroll_offset,current_offset," ",max_offset_top)
                     
-            elif event.button == 4 and 0<mouse_pos[0] < WINDOW_WIDTH and 0<mouse_pos[1] < WINDOW_HEIGHT  :  # Mouse wheel up,
-                TILE_SIZE = TILE_SIZE+5
-            
-            elif event.button == 5 and 0<mouse_pos[0] < WINDOW_WIDTH and 0<mouse_pos[1] < WINDOW_HEIGHT  :
+            elif event.button == 4 and 0<mouse_pos[0] < WINDOW_WIDTH-SIDEBAR_WIDTH and 0<mouse_pos[1] < WINDOW_HEIGHT  :  # Mouse wheel up,
+                if TILE_SIZE < 70:
+                    TILE_SIZE = TILE_SIZE+5
+                    print(TILE_SIZE)
+              
+            elif event.button == 5 and 0<mouse_pos[0] < WINDOW_WIDTH-SIDEBAR_WIDTH and 0<mouse_pos[1] < WINDOW_HEIGHT  : # Mouse wheel down
                 TILE_SIZE = TILE_SIZE-5
                 if TILE_SIZE < 20:
                     TILE_SIZE = 20
-            
+                print(TILE_SIZE)
             
         elif event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 3:
+            if event.button == 1:
                 
+                dragging2 = False
+                
+                # unlocking region logic
+                if 0<mouse_pos[0] < 1200 and 0 <mouse_pos[1] < 800:
+                        for buttons in region_button_list:
+                            if buttons.rect.collidepoint(mouse_pos):
+                                is_region_gone = buttons.execute_command()
+                                print(is_region_gone,"is region gone")
+                                if is_region_gone:
+                                    buttons.rect = pygame.Rect(0, 0, 0, 0)
+                                    break
+                                print("Region button clicked")
+                                break
+            if event.button == 3:
+                # Sell selected building on the grid
+               
+                grid_x = (mouse_pos[0]-move_x) // TILE_SIZE
+                grid_y = (mouse_pos[1]-move_y) // TILE_SIZE
+                if   (0 <= grid_x < len(grid)*TILE_SIZE and 0 <= grid_y < len(grid[grid_x])*TILE_SIZE) and grid[grid_x][grid_y] != TILE_EMPTY and grid[grid_x][grid_y] != TILE_OCEAN and grid[grid_x][grid_y] != TILE_CLOUDY: 
+                    if isinstance(grid[grid_x][grid_y], (EnergyConverter, HeatGenerator, Office, ResearchLab,Battery)):
+                        if sell_building(grid[grid_x][grid_y]):
+                            grid[grid_x][grid_y] = TILE_EMPTY
+                            
+                # moving logic
                 if mouse_pos[0]-x_offset < 400 and mouse_pos[0]-x_offset > -1300:
                     move_x = mouse_pos[0] - x_offset
                 elif mouse_pos[0]-x_offset > 400:
@@ -1373,20 +1344,78 @@ while running:
           
             
             
-    for office in lists_of_buildings[Office]:
-        office.sell_energy(player)
-        total_energy_sold += office.energy_sell_rate
-        # print("Energy sold",office.energy_sell_rate,"/ Tier",office.tier)
+    # for office in lists_of_buildings[Office]:
+    #     office.sell_energy(player)
+    #     total_energy_sold += office.energy_sell_rate
+    #     # print("Energy sold",office.energy_sell_rate,"/ Tier",office.tier)
                 
-    for lab in lists_of_buildings[ResearchLab]:
-        lab.research(player)       
+    # for lab in lists_of_buildings[ResearchLab]:
+    #     lab.research(player)       
 
+    # energy_gen_thread = threading.Thread(target=energy_gen)
+    # energy_gen_thread.start()
 
     # Display game information
     
     # continent = pygame.Surface((WINDOW_WIDTH - SIDEBAR_WIDTH, WINDOW_HEIGHT))
 
-    
+    if dragging2: 
+        if 0<mouse_pos[0] < 1200// TILE_SIZE and 0 <mouse_pos[1] < 800// TILE_SIZE:
+                    grid_x = (mouse_pos[0]-move_x) // TILE_SIZE
+                    grid_y = (mouse_pos[1]-move_y) // TILE_SIZE
+                    # for generator in lists_of_buildings[HeatGenerator]:
+                    #     if generator[0].rect.collidepoint(mouse_pos):
+                    #         print("Generator clicked")
+                    #         generator[0].upgrade_production()
+                    #         break
+                    if isinstance(grid[grid_x][grid_y],HeatGenerator) and grid[grid_x][grid_y].life_left == 0:
+                        grid[grid_x][grid_y].life_left = grid[grid_x][grid_y].life_cycle
+                        
+        if  selected_building != None and 0 < mouse_pos[0] < 1200  and 0 < mouse_pos[1] <  len(grid[selected_building])*TILE_SIZE+move_y and grid[(mouse_pos[0]-move_x) // TILE_SIZE][(mouse_pos[1]-move_y) // TILE_SIZE] == 1 and state == "Buy" :
+            # if dragging == True:
+            #     print("dragging")
+            # Place selected building on the grid
+            grid_x = (mouse_pos[0]-move_x) // TILE_SIZE
+            grid_y = (mouse_pos[1]-move_y) // TILE_SIZE
+            print((mouse_pos[1]-current_offset)// TILE_SIZE)
+                                                    #BUY BUILDINGS 
+            if 0 <= grid_x < len(grid) and 0 <= grid_y < len(grid[grid_x]):
+                building_buildable = False
+
+                # for i in range(len(menu_button_list)):
+                research_check_bool = (buy_menu[selected_building][5] if selected_building > 1 else True)
+                enough_money = player.enough_money(buy_menu[selected_building][1](buy_menu[selected_building][4],buy_menu[selected_building][3],buy_menu[selected_building][0]))
+                #     print("res_check: ",research_check_bool,"/ money_check: ",enough_money)
+                #     # print("mwenu",buy_menu[selected_building][5])
+
+                if research_check_bool and enough_money :
+                    click_sound.play()
+                    print(buy_menu[selected_building][0])
+                    grid[grid_x][grid_y] = buy_menu[selected_building][1](buy_menu[selected_building][4],buy_menu[selected_building][3],buy_menu[selected_building][0],buy_menu[selected_building][6])
+                    
+                    print(buy_menu[selected_building][3])
+                    lists_of_buildings[buy_menu[selected_building][1]].append((grid[grid_x][grid_y],grid_x*TILE_SIZE+move_x,grid_y*TILE_SIZE+move_y))  
+                    player.buy_energy_generator(buy_menu[selected_building][1](buy_menu[selected_building][4],buy_menu[selected_building][3],buy_menu[selected_building][0],buy_menu[selected_building][6]))
+                    print(buy_menu[selected_building][0],"bought")
+                    building_buildable = True
+                    if isinstance(grid[grid_x][grid_y],Battery):
+                        player.max_energy += grid[grid_x][grid_y].battery_capacity
+                    
+
+                if not building_buildable:
+                    print("None",research_check_bool, enough_money)
+                    dragging2 = False
+                    if  research_check_bool and not enough_money:
+                        print("1",research_check_bool, enough_money)
+                        confirmation_window(not_enough_money_text,ok_text)
+                    elif not research_check_bool and  enough_money:
+                        print("2",research_check_bool, enough_money)
+                        confirmation_window(not_researched_text,ok_text)
+
+                    elif not research_check_bool and not enough_money:
+                        print("3",research_check_bool, enough_money)
+                        confirmation_window(not_researched_text,ok_text)
+                        
     # pygame.draw.rect(window, (0, 105, 148), (0 , 0, WINDOW_WIDTH - SIDEBAR_WIDTH, WINDOW_HEIGHT)) 
     background_surface = pygame.Surface((WINDOW_WIDTH - SIDEBAR_WIDTH, WINDOW_HEIGHT))
     for x in range(0, WINDOW_WIDTH - SIDEBAR_WIDTH, 50):
@@ -1396,96 +1425,73 @@ while running:
 
 
     tile_image = pygame.transform.scale(pygame.image.load('Data/tile2.jpg'), (TILE_SIZE, TILE_SIZE))
+    cloud_image = pygame.transform.scale(pygame.image.load('Data/cloud_tile.png'), (TILE_SIZE, TILE_SIZE)) 
+
+
+ 
+ 
+ 
     
+                
+                            
+ 
+ 
 
-    # if dragging :
-    #    # Draw tiles and objects
-    #     for i in range(NUM_TILES_X):
-    #         for j in range(NUM_TILES_Y):
-    #             rect = pygame.Rect(i * TILE_SIZE+(mouse_pos[0]-x_offset if mouse_pos[0]-x_offset< 400  and mouse_pos[0]-x_offset> 0 else (400 if mouse_pos[0]-x_offset > 0 else 0)) , j * TILE_SIZE+(mouse_pos[1]-y_offset if mouse_pos[1]-y_offset < 400  and mouse_pos[1]-y_offset> 0 else (400 if mouse_pos[1]-y_offset > 0 else 0)), TILE_SIZE, TILE_SIZE)
-    #             if isinstance(grid[i][j], EnergyConverter) or isinstance(grid[i][j], HeatGenerator) or isinstance(grid[i][j], Office) or isinstance(grid[i][j], ResearchLab) or isinstance(grid[i][j], Battery):
-                    
-    #                 for buildings in buy_menu:
-    #                     if buy_menu[buildings][0] == grid[i][j].name:
-    #                         window.blit(tile_images[buildings], rect)
-    #                         # window.blit(tile_image, rect)
-    #                         # window.blit(buy_menu[buildings][2],(i * TILE_SIZE+5, j * TILE_SIZE+5, TILE_SIZE, TILE_SIZE) )
-
-    #             else:
-    #                 window.blit(tile_image, rect)
-    # else:
-    #     for i in range(NUM_TILES_X):
-    #         for j in range(NUM_TILES_Y):
-    #             rect = pygame.Rect(i * TILE_SIZE+move_x, j * TILE_SIZE+move_y, TILE_SIZE, TILE_SIZE)
-    #             if isinstance(grid[i][j], EnergyConverter) or isinstance(grid[i][j], HeatGenerator) or isinstance(grid[i][j], Office) or isinstance(grid[i][j], ResearchLab) or isinstance(grid[i][j], Battery):
-                    
-    #                 for buildings in buy_menu:
-    #                     if buy_menu[buildings][0] == grid[i][j].name:
-    #                         window.blit(tile_images[buildings], rect)
-    #                         # window.blit(tile_image, rect)
-    #                         # window.blit(buy_menu[buildings][2],(i * TILE_SIZE+5, j * TILE_SIZE+5, TILE_SIZE, TILE_SIZE) )
-
-    #             else:
-    #                 window.blit(tile_image, rect)
-    
-    
-    
-    # for row in range(len(turkey_grid)):
-    #     for col in range(len(turkey_grid[row])-10):
-
-    #         rect = pygame.Rect(row * TILE_SIZE, col * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-    #         if turkey_grid[row][col] == 1:
-    #             window.blit(pygame.transform.scale(pygame.image.load('Data/tile2.jpg'), (50,50)), rect)
-            
-    #         else:
-    #             window.blit(pygame.transform.scale(pygame.image.load('Data/background.jpg'), (50,50)), rect)
-
- 
- 
- 
- 
- 
- 
- 
- 
- # BUYING BUILDINGS STILL PLACES THE BUILDINGS ON THE GRID, AND STILL CAN BE DRAGGED BUT NEEDS TO BE ON TURKEY GRID
- 
- 
- 
-    if dragging :
-       # Draw tiles and objects
-        for i in range(len(turkey_grid)):
-            for j in range(len(turkey_grid[i])):
-                rect = pygame.Rect(i * TILE_SIZE+(mouse_pos[0]-x_offset if mouse_pos[0]-x_offset< 400  and mouse_pos[0]-x_offset> -1300 else (400 if mouse_pos[0]-x_offset > -1300 else -1300)) , j * TILE_SIZE+(mouse_pos[1]-y_offset if mouse_pos[1]-y_offset < 400  and mouse_pos[1]-y_offset> -300 else (400 if mouse_pos[1]-y_offset > -300 else -300)), TILE_SIZE, TILE_SIZE)
-                if isinstance(turkey_grid[i][j], EnergyConverter) or isinstance(turkey_grid[i][j], HeatGenerator) or isinstance(turkey_grid[i][j], Office) or isinstance(turkey_grid[i][j], ResearchLab) or isinstance(turkey_grid[i][j], Battery):
-                    
+    if dragging:
+    # Draw tiles and objects
+        for i in range(len(grid)):
+            for j in range(len(grid[i])):
+                rect = pygame.Rect(
+                    i * TILE_SIZE + (mouse_pos[0] - x_offset if -1300 < mouse_pos[0] - x_offset < 400 else (400 if mouse_pos[0] - x_offset > -1300 else -1300)),
+                    j * TILE_SIZE + (mouse_pos[1] - y_offset if -300 < mouse_pos[1] - y_offset < 400 else (400 if mouse_pos[1] - y_offset > -300 else -300)),
+                    TILE_SIZE, TILE_SIZE
+                )
+                if grid[i][j] == 0:
+                    pass
+                elif isinstance(grid[i][j], EnergyConverter) or isinstance(grid[i][j], Office) or isinstance(grid[i][j], ResearchLab) or isinstance(grid[i][j], Battery):
                     for buildings in buy_menu:
-                        if buy_menu[buildings][0] == turkey_grid[i][j].name:
-                            window.blit(tile_images[buildings], rect)
-                            # window.blit(tile_image, rect)
-                            # window.blit(buy_menu[buildings][2],(i * TILE_SIZE+5, j * TILE_SIZE+5, TILE_SIZE, TILE_SIZE) )
-
-                elif turkey_grid[i][j] == 1:
+                        if buy_menu[buildings][0] == grid[i][j].name:
+                            window.blit(pygame.transform.scale(tile_images[buildings], (TILE_SIZE, TILE_SIZE)), rect)
+                elif isinstance(grid[i][j], HeatGenerator):
+                    # Draw the tile image first
                     window.blit(tile_image, rect)
-                # else:
-                #     # window.blit(background_image, rect)
+                    # Then draw the HeatGenerator image on top
+                    image_surface = pygame.transform.scale(combined_dict[grid[i][j].name][1], (TILE_SIZE, TILE_SIZE))
+                    if grid[i][j].life_left == 0:
+                        image_surface.set_alpha(100)
+                    else:
+                        image_surface.set_alpha(255)  # Fully opaque when not life_left
+                    window.blit(image_surface, rect)
+                elif grid[i][j] == TILE_EMPTY:
+                    window.blit(tile_image, rect)
+                elif grid[i][j] == TILE_CLOUDY:
+                    window.blit(cloud_image, rect)
     else:
-        for i in range(len(turkey_grid)):
-            for j in range(len(turkey_grid[i])):
-                rect = pygame.Rect(i * TILE_SIZE+move_x, j * TILE_SIZE+move_y, TILE_SIZE, TILE_SIZE)
-                if isinstance(turkey_grid[i][j], EnergyConverter) or isinstance(turkey_grid[i][j], HeatGenerator) or isinstance(turkey_grid[i][j], Office) or isinstance(turkey_grid[i][j], ResearchLab) or isinstance(turkey_grid[i][j], Battery):
-                    
+        for i in range(len(grid)):
+            for j in range(len(grid[i])):
+                rect = pygame.Rect(i * TILE_SIZE + move_x, j * TILE_SIZE + move_y, TILE_SIZE, TILE_SIZE)
+                if grid[i][j] == 0:
+                    pass
+                elif isinstance(grid[i][j], EnergyConverter) or isinstance(grid[i][j], Office) or isinstance(grid[i][j], ResearchLab) or isinstance(grid[i][j], Battery):
                     for buildings in buy_menu:
-                        if buy_menu[buildings][0] == turkey_grid[i][j].name:
-                            window.blit(tile_images[buildings], rect)
-                            # window.blit(tile_image, rect)
-                            # window.blit(buy_menu[buildings][2],(i * TILE_SIZE+5, j * TILE_SIZE+5, TILE_SIZE, TILE_SIZE) )
-
-                elif turkey_grid[i][j] == 1:
+                        if buy_menu[buildings][0] == grid[i][j].name:
+                            window.blit(pygame.transform.scale(tile_images[buildings], (TILE_SIZE, TILE_SIZE)), rect)
+                elif grid[i][j] == TILE_EMPTY:
                     window.blit(tile_image, rect)
-                # else:
-                    
-                #     # window.blit(background_image, rect)
+                elif isinstance(grid[i][j], HeatGenerator):
+                    # Draw the tile image first
+                    window.blit(tile_image, rect)
+                    # Then draw the HeatGenerator image on top
+                    image_surface = pygame.transform.scale(combined_dict[grid[i][j].name][1], (TILE_SIZE, TILE_SIZE))
+                    if grid[i][j].life_left == 0:
+                        image_surface.set_alpha(100)
+                    else:
+                        image_surface.set_alpha(255)  # Fully opaque when not life_left
+                    window.blit(image_surface, rect)
+                elif grid[i][j] == TILE_CLOUDY:
+                    window.blit(cloud_image, rect)
+
+        
     
     
     
@@ -1508,39 +1514,33 @@ while running:
     # window.blit(side_bar, (WINDOW_WIDTH - SIDEBAR_WIDTH, WINDOW_HEIGHT))
     # scroll_bar.convert_alpha()
     # window.blit(scroll_bar, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, 1 * SIDEBAR_ITEM_HEIGHT - 40))
-    pygame.draw.rect(window, (0, 105, 148), (WINDOW_WIDTH - SIDEBAR_WIDTH, 0, SIDEBAR_WIDTH, WINDOW_HEIGHT)) 
 
 
-    # menu_button1.draw(window)
-    # menu_button2.draw(window)
-    # menu_button3.draw(window)
-    # menu_button4.draw(window)
-    # menu_button5.draw(window)
+    heat_bar_updater()
+    life_cycle_updater()
     button_drawer()
 
+    # Draw sidebar
+    pygame.draw.rect(window, (0, 105, 148), (WINDOW_WIDTH - SIDEBAR_WIDTH, 0, 10, WINDOW_HEIGHT))
 
-    #Draw sidebar
-    pygame.draw.rect(window, (0, 105, 148), (WINDOW_WIDTH - SIDEBAR_WIDTH, 0,10 , WINDOW_HEIGHT)) 
-    
-    #upper line
-    pygame.draw.rect(window, (0, 105, 148), (WINDOW_WIDTH - SIDEBAR_WIDTH, 0, SIDEBAR_WIDTH , 1 * SIDEBAR_ITEM_HEIGHT - 40))
-     
-    # scroll tracker
-    pygame.draw.rect(window, (GRAY), (WINDOW_WIDTH - SIDEBAR_WIDTH+460, 10,15 , WINDOW_HEIGHT)) 
-    
-    #bottom area
-    pygame.draw.rect(window, (0, 105, 148), (WINDOW_WIDTH - SIDEBAR_WIDTH, 9 * SIDEBAR_ITEM_HEIGHT - 40, SIDEBAR_WIDTH , WINDOW_HEIGHT-  SIDEBAR_ITEM_HEIGHT - 40)) 
-    
+    # Upper line
+    pygame.draw.rect(window, (0, 105, 148), (WINDOW_WIDTH - SIDEBAR_WIDTH, 0, SIDEBAR_WIDTH, 1 * SIDEBAR_ITEM_HEIGHT - 40))
+
+    # Scroll tracker
+    pygame.draw.rect(window, (180, 180, 255), (WINDOW_WIDTH - SIDEBAR_WIDTH + 460, 10, 15, WINDOW_HEIGHT))
+
+    # Bottom area
+    pygame.draw.rect(window, (0, 105, 148), (WINDOW_WIDTH - SIDEBAR_WIDTH, 9 * SIDEBAR_ITEM_HEIGHT - 40, SIDEBAR_WIDTH, WINDOW_HEIGHT - SIDEBAR_ITEM_HEIGHT - 40))
+
     
     
     switch_view(state,current_tier)
     # pygame.draw.rect(window, (0, 105, 148), scroll_bar_rect)
-    window.blit(menu_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 170, 9* SIDEBAR_ITEM_HEIGHT -30))
-
+    #window.blit(menu_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 210, 9* SIDEBAR_ITEM_HEIGHT -30))
 
 
     
-    scroll_tracker.draw(window)
+    scroll_tracker.draw(window,scroll_offset,SIDEBAR_ITEM_HEIGHT)
     
     
     
@@ -1548,17 +1548,22 @@ while running:
     # testbutton.draw(window)
     scroll_offset = 0
     
-
+    font = pygame.font.Font(None, 21)
     # Display game information (money and power)
     money_text = font.render(f'Money: {number_format(int(player.money))}', True, (0, 0, 100))
-    energy_text = font.render(f'Energy: {number_format(int(player.energy))}/{int(player.max_energy)}', True, (0, 0,100))
+    money_persec_text = font.render(f'Money/Second: {number_format(money_gen_per_second*4)}', True, (0, 0, 100))
+    energy_text = font.render(f'Energy: {number_format(int(player.energy))}/{number_format(int(player.max_energy))}', True, (0, 0,100))
+    energy_persec_text = font.render(f'Energy/Second: {number_format(int(energy_gen_per_second*4))}', True, (0, 0,100))
     research_text = font.render(f'Research: {number_format(int(player.research))}', True, (0, 0, 100))
-    total_energy_text = font.render(f'Money Per Second: {number_format(int(total_energy_sold*60*2.5))}', True, (0, 0, 100))
+    research_persec_text = font.render(f'Research/Second: {number_format(int(research_gen_per_second*4))}', True, (0, 0, 100))
+
     window.blit(money_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, WINDOW_HEIGHT - 80))
-    window.blit(energy_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 175, WINDOW_HEIGHT - 80))
-    window.blit(research_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 350, WINDOW_HEIGHT - 80))
-    window.blit(total_energy_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, WINDOW_HEIGHT - 120))
-    
+    window.blit(money_persec_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 10, WINDOW_HEIGHT - 40))
+    window.blit(energy_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 155, WINDOW_HEIGHT - 80))
+    window.blit(energy_persec_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 155, WINDOW_HEIGHT - 40))
+    window.blit(research_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 310, WINDOW_HEIGHT - 80))
+    window.blit(research_persec_text, (WINDOW_WIDTH - SIDEBAR_WIDTH + 310, WINDOW_HEIGHT - 40))
+
 
 
     # Blit the bottom bar onto the main window
@@ -1572,7 +1577,8 @@ while running:
     delete_multiple_button.draw(window)
     research_button.draw(window)
     convert_button.draw(window)
-
+    quickplace_button.draw(window)
+    quickrevive_button.draw(window)
 
 
 
@@ -1583,23 +1589,30 @@ while running:
     # coordinates hover
     # test = font.render(f'Coordinates: {mouse_x,mouse_y}', True, (0, 0, 0))
     # window.blit(test,( mouse_pos[0], mouse_pos[1]))
-
+    
+    #fps hover
+    #test = font.render(f'FPS: {clock}', True, (0, 0, 0))
+    #window.blit(test,( mouse_pos[0], mouse_pos[1]))
 
     grid_x = (mouse_pos[0]-move_x )// TILE_SIZE
     grid_y = (mouse_pos[1]-+move_y) // TILE_SIZE
-    if 0 <= grid_x < NUM_TILES_X and 0 <= grid_y < NUM_TILES_Y:
+    if 0 <= grid_x < len(grid) and 0 <= grid_y < len(grid[grid_x]):
+        # if grid[grid_x][grid_y] != TILE_EMPTY and grid[grid_x][grid_y] != TILE_OCEAN:
         info_text = None
         if isinstance(grid[grid_x][grid_y], EnergyConverter):
-            info_text = font.render(f'Energy per heat: {grid[grid_x][grid_y].heat_conversion_per_second}', True, (255, 255, 255))
+            info_text = font.render(f'Energy per heat: {number_format(grid[grid_x][grid_y].heat_conversion_per_second*4)}, Stored Energy: { number_format(grid[grid_x][grid_y].stored_heat)}, Max Energy: {number_format( grid[grid_x][grid_y].max_heat)}', True, (255, 255, 255))
 
         elif isinstance(grid[grid_x][grid_y], HeatGenerator):
-            info_text = font.render(f'Heat per tick: {grid[grid_x][grid_y].heat_per_tick}', True, (255, 255, 255))
+            info_text = font.render(f'Heat per second: {number_format(grid[grid_x][grid_y].heat_per_tick*4)}, Total Lifecyle: { number_format(grid[grid_x][grid_y].life_cycle)}, Lifecyle Left: {number_format( grid[grid_x][grid_y].life_left)}', True, (255, 255, 255))
 
         elif isinstance(grid[grid_x][grid_y], Office):
-            info_text = font.render(f'Energy sell rate: {grid[grid_x][grid_y].energy_sell_rate * 60:.2f} per second tier {grid[grid_x][grid_y].tier}', True, (255, 255, 255))
+            info_text = font.render(f'Energy sell rate: {number_format( grid[grid_x][grid_y].energy_sell_rate*4)} per second tier {number_format( grid[grid_x][grid_y].tier)} Level {number_format( grid[grid_x][grid_y].upgrade)}', True, (255, 255, 255))
         
         elif isinstance(grid[grid_x][grid_y], ResearchLab):
-            info_text = font.render(f'Research rate: {grid[grid_x][grid_y].research_rate * 60:.2f} per second tier {grid[grid_x][grid_y].tier}', True, (255, 255, 255))
+            info_text = font.render(f'Research Per Second: {number_format( grid[grid_x][grid_y].research_rate*4)} per second tier {number_format( grid[grid_x][grid_y].tier)} Level {number_format( grid[grid_x][grid_y].upgrade)}', True, (255, 255, 255))
+        
+        elif isinstance(grid[grid_x][grid_y], Battery):
+            info_text = font.render(f'Increased Energy Cap: {number_format( grid[grid_x][grid_y].battery_capacity)}', True, (255, 255, 255))
 
         else :
             info_text = None
